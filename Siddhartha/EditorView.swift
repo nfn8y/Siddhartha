@@ -4,11 +4,13 @@
 //
 
 import SwiftUI
-import UniformTypeIdentifiers // <--- THIS IS THE FIX
+import UniformTypeIdentifiers
 
 struct EditorView: View {
     @Bindable var sheet: Sheet
-    @State private var isExporting = false
+    
+    // Track cursor position so we know where to drop the image
+    @State private var selectedRange: NSRange = NSRange(location: 0, length: 0)
 
     var body: some View {
         VStack(spacing: 0) {
@@ -22,10 +24,9 @@ struct EditorView: View {
             
             Divider().opacity(0.5)
             
-            // Editor
             ZStack(alignment: .bottomTrailing) {
                 #if os(macOS)
-                MacMarkdownEditor(text: $sheet.content) { _ in
+                MacMarkdownEditor(text: $sheet.content, selectedRange: $selectedRange) { _ in
                     sheet.lastModified = Date()
                 }
                 .padding(.top, 8)
@@ -38,7 +39,7 @@ struct EditorView: View {
                 #endif
                 
                 // Word Count
-                Text("\(wordCount) words")
+                Text("\(sheet.wordCount) words")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .padding(8)
@@ -48,12 +49,18 @@ struct EditorView: View {
             }
         }
         .background(Theme.paperBackground)
-        // --- EXPORT BUTTON ---
         .toolbar {
+            // --- IMAGE BUTTON ---
             ToolbarItem(placement: .primaryAction) {
-                Button {
-                    exportPDF()
-                } label: {
+                Button(action: insertImage) {
+                    Image(systemName: "photo")
+                }
+                .help("Insert Image")
+            }
+            
+            // --- EXPORT BUTTON ---
+            ToolbarItem(placement: .primaryAction) {
+                Button(action: exportPDF) {
                     Image(systemName: "square.and.arrow.up")
                 }
                 .help("Export to PDF")
@@ -61,39 +68,62 @@ struct EditorView: View {
         }
     }
     
-    private var wordCount: Int {
-        if sheet.content.isEmpty { return 0 }
-        return sheet.content.split { $0.isWhitespace || $0.isNewline }.count
+    // --- IMAGE LOGIC ---
+    private func insertImage() {
+        #if os(macOS)
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.image]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        
+        panel.begin { response in
+            if response == .OK, let url = panel.url {
+                // 1. Load the image
+                if let image = NSImage(contentsOf: url) {
+                    // 2. Save it to our app's permanent storage
+                    if let filename = ImageStorage.saveImage(image) {
+                        // 3. Create the Markdown tag
+                        let markdown = "\n![Image](\(filename))\n"
+                        
+                        // 4. Insert at cursor position
+                        insertTextAtCursor(markdown)
+                    }
+                }
+            }
+        }
+        #endif
+    }
+    
+    private func insertTextAtCursor(_ text: String) {
+        // Safety check: Ensure range is valid
+        if selectedRange.location <= sheet.content.count {
+            // Convert String to NSString for safe range replacement
+            let nsContent = sheet.content as NSString
+            let newContent = nsContent.replacingCharacters(in: selectedRange, with: text)
+            
+            // Update the sheet
+            sheet.content = newContent
+            sheet.lastModified = Date()
+            
+            // Move cursor after the insertion (Optional polish)
+            selectedRange = NSRange(location: selectedRange.location + text.count, length: 0)
+        } else {
+            // Fallback: Append to end if cursor is lost
+            sheet.content += text
+        }
     }
     
     // --- EXPORT LOGIC ---
-    // --- EXPORT LOGIC ---
     private func exportPDF() {
-        // 1. Generate the PDF
-        guard let url = PDFCreator.createSimplePDF(title: sheet.title, content: sheet.content) else {
-            print("Could not generate PDF")
-            return
-        }
+        guard let url = PDFCreator.createSimplePDF(title: sheet.title, content: sheet.content) else { return }
 
-        // 2. Open Save Panel
         let savePanel = NSSavePanel()
         savePanel.allowedContentTypes = [.pdf]
-        savePanel.canCreateDirectories = true
-        savePanel.isExtensionHidden = false
-        savePanel.title = "Export Note"
         savePanel.nameFieldStringValue = sheet.title.isEmpty ? "Untitled" : sheet.title
-
+        
         savePanel.begin { response in
             if response == .OK, let targetURL = savePanel.url {
-                do {
-                    // If a file already exists there, delete it first to avoid crash
-                    if FileManager.default.fileExists(atPath: targetURL.path) {
-                        try FileManager.default.removeItem(at: targetURL)
-                    }
-                    try FileManager.default.copyItem(at: url, to: targetURL)
-                } catch {
-                    print("Export failed: \(error.localizedDescription)")
-                }
+                try? FileManager.default.copyItem(at: url, to: targetURL)
             }
         }
     }
