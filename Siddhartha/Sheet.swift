@@ -1,18 +1,28 @@
 //
-//  Item.swift
+//  Sheet.swift
 //  Siddhartha
-//
-//  Created by Kumar Yashwant on 1/8/26.
 //
 
 import Foundation
 import SwiftData
 
 @Model
-final class Item {
-    var timestamp: Date
+final class Sheet {
+    var title: String
+    var content: String
+    var createdAt: Date
+    var lastModified: Date
     
-    init(timestamp: Date) {
-        self.timestamp = timestamp
+    init(title: String = "Untitled", content: String = "") {
+        self.title = title
+        self.content = content
+        self.createdAt = Date()
+        self.lastModified = Date()
+    }
+    
+    // --- NEW: Testable Logic ---
+    var wordCount: Int {
+        if content.isEmpty { return 0 }
+        return content.split { $0.isWhitespace || $0.isNewline }.count
     }
 }
