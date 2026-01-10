@@ -9,12 +9,17 @@ import UniformTypeIdentifiers
 struct EditorView: View {
     @Bindable var sheet: Sheet
     @State private var selectedRange: NSRange = NSRange(location: 0, length: 0)
+    
+    // Inject our services (Dependency Injection)
+    private let theme = Services.shared.theme
+    private let actions = Services.shared.actions
+    private let storage = Services.shared.storage
 
     var body: some View {
         VStack(spacing: 0) {
             // Title
             TextField("Chapter Title", text: $sheet.title)
-                .font(Theme.titleFont)
+                .font(theme.titleFont) // Using Service
                 .textFieldStyle(.plain)
                 .padding(.horizontal)
                 .padding(.top, 20)
@@ -23,7 +28,8 @@ struct EditorView: View {
             Divider().opacity(0.5)
             
             ZStack(alignment: .bottomTrailing) {
-                // --- THE CLEAN SWAP ---
+                // PlatformEditor still handles the specific View differences internally
+                // (Views are harder to abstract than logic, but this is clean enough)
                 PlatformEditor(
                     sheet: sheet,
                     selectedRange: $selectedRange,
@@ -31,7 +37,6 @@ struct EditorView: View {
                 )
                 .padding(8)
                 
-                // Word Count
                 Text("\(sheet.wordCount) words")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -41,16 +46,18 @@ struct EditorView: View {
                     .padding()
             }
         }
-        .background(Theme.paperBackground)
+        .background(theme.paperBackground) // Using Service
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                // We use our Platform flag to decide if buttons should exist
-                if Platform.current.supportsWindowedExport {
-                    HStack {
-                        Button(action: insertImageMac) {
+                HStack {
+                    if actions.supportsImagePicker {
+                        Button(action: handleImagePick) {
                             Image(systemName: "photo")
                         }
-                        Button(action: exportPDFMac) {
+                    }
+                    
+                    if actions.supportsPDFExport {
+                        Button(action: handleExport) {
                             Image(systemName: "square.and.arrow.up")
                         }
                     }
@@ -59,23 +66,33 @@ struct EditorView: View {
         }
     }
     
-    // We still have to keep these functions here for now because they trigger UI panels,
-    // but at least they are isolated.
-    private func insertImageMac() {
-        #if os(macOS)
-        let panel = NSOpenPanel()
-        panel.allowedContentTypes = [.image]
-        panel.begin { response in
-            if response == .OK, let url = panel.url {
-                 // ... logic ...
-            }
+    // --- PURE LOGIC HANDLERS ---
+    
+    private func handleImagePick() {
+        actions.pickImage { image in
+            guard let image = image,
+                  let filename = storage.saveImage(image) else { return }
+            
+            let markdown = "\n![Image](\(filename))\n"
+            insertTextAtCursor(markdown)
         }
-        #endif
     }
-
-    private func exportPDFMac() {
-        #if os(macOS)
-        // ... logic ...
-        #endif
+    
+    private func handleExport() {
+        guard let url = storage.createPDF(title: sheet.title, content: sheet.content) else { return }
+        actions.exportPDF(url: url, title: sheet.title)
+    }
+    
+    private func insertTextAtCursor(_ text: String) {
+        // (Same helper logic as before)
+        if selectedRange.location <= sheet.content.count {
+            let nsContent = sheet.content as NSString
+            let newContent = nsContent.replacingCharacters(in: selectedRange, with: text)
+            sheet.content = newContent
+            sheet.lastModified = Date()
+            selectedRange = NSRange(location: selectedRange.location + text.count, length: 0)
+        } else {
+            sheet.content += text
+        }
     }
 }
