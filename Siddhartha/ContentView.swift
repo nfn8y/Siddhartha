@@ -8,8 +8,9 @@ import SwiftData
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query(sort: \Sheet.lastModified, order: .reverse) private var sheets: [Sheet]
+    @Query(sort: \Sheet.createdAt, order: .reverse) private var sheets: [Sheet]
     
+    // 1. Explicitly track the selection
     @State private var selectedSheet: Sheet?
 
     var body: some View {
@@ -17,48 +18,43 @@ struct ContentView: View {
             List(selection: $selectedSheet) {
                 ForEach(sheets) { sheet in
                     NavigationLink(value: sheet) {
-                        VStack(alignment: .leading, spacing: 4) {
+                        VStack(alignment: .leading) {
                             Text(sheet.title.isEmpty ? "Untitled" : sheet.title)
                                 .font(.headline)
-                                .foregroundStyle(.primary)
-                            
-                            Text(sheet.content.isEmpty ? "No content" : sheet.content)
+                            Text(sheet.createdAt.formatted(date: .numeric, time: .shortened))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
-                                .lineLimit(1)
                         }
-                        .padding(.vertical, 4)
                     }
                 }
                 .onDelete(perform: deleteItems)
             }
             .navigationTitle("Siddhartha")
-            .listStyle(.sidebar)
             .toolbar {
-                // --- THE FIX ---
-                // "placement: .navigation" forces the button to the FAR LEFT.
-                // It sits right next to the window controls/sidebar toggle.
-                ToolbarItem(placement: .navigation) {
+                ToolbarItem(placement: .primaryAction) {
                     Button(action: addItem) {
-                        Image(systemName: "square.and.pencil")
+                        Label("Add Item", systemImage: "plus")
                     }
-                    .help("Create New Note") // Adds a hover tooltip
                 }
             }
         } detail: {
             if let sheet = selectedSheet {
+                // 2. The Fix: We pass the sheet to the Editor
                 EditorView(sheet: sheet)
+                    // 3. CRITICAL: Force a full refresh when the ID changes
+                    .id(sheet.id)
             } else {
-                ContentUnavailableView("Siddhartha", systemImage: "text.book.closed", description: Text("Select a sheet to start writing."))
+                ContentUnavailableView("Select a Note", systemImage: "doc.text")
             }
         }
     }
 
     private func addItem() {
         withAnimation {
-            let newSheet = Sheet(title: "", content: "")
-            modelContext.insert(newSheet)
-            selectedSheet = newSheet
+            let newItem = Sheet()
+            modelContext.insert(newItem)
+            // Auto-select the new item so we can edit it immediately
+            selectedSheet = newItem
         }
     }
 
