@@ -9,14 +9,14 @@ import UniformTypeIdentifiers
 struct EditorView: View {
     @Bindable var sheet: Sheet
     
-    // Track cursor position so we know where to drop the image
+    // Track cursor (Only works on Mac for now)
     @State private var selectedRange: NSRange = NSRange(location: 0, length: 0)
 
     var body: some View {
         VStack(spacing: 0) {
             // Title
             TextField("Chapter Title", text: $sheet.title)
-                .font(Theme.titleFont)
+                .font(Theme.titleFont) // Ensure Theme.swift handles fonts correctly!
                 .textFieldStyle(.plain)
                 .padding(.horizontal)
                 .padding(.top, 20)
@@ -31,9 +31,11 @@ struct EditorView: View {
                 }
                 .padding(.top, 8)
                 #else
+                // --- iOS Editor ---
                 TextEditor(text: $sheet.content)
-                    .onChange(of: sheet.content) { sheet.lastModified = Date() }
-                    .font(Theme.writingFont)
+                    .onChange(of: sheet.content) {
+                        sheet.lastModified = Date()
+                    }
                     .scrollContentBackground(.hidden)
                     .padding()
                 #endif
@@ -48,9 +50,10 @@ struct EditorView: View {
                     .padding()
             }
         }
-        .background(Theme.paperBackground)
+        .background(Color.gray.opacity(0.1)) // Simple background fix
         .toolbar {
-            // --- IMAGE BUTTON ---
+            // ONLY SHOW THESE BUTTONS ON MAC
+            #if os(macOS)
             ToolbarItem(placement: .primaryAction) {
                 Button(action: insertImage) {
                     Image(systemName: "photo")
@@ -58,19 +61,19 @@ struct EditorView: View {
                 .help("Insert Image")
             }
             
-            // --- EXPORT BUTTON ---
             ToolbarItem(placement: .primaryAction) {
                 Button(action: exportPDF) {
                     Image(systemName: "square.and.arrow.up")
                 }
                 .help("Export to PDF")
             }
+            #endif
         }
     }
     
-    // --- IMAGE LOGIC ---
+    // --- MAC ONLY LOGIC ---
+    #if os(macOS)
     private func insertImage() {
-        #if os(macOS)
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.image]
         panel.allowsMultipleSelection = false
@@ -78,42 +81,28 @@ struct EditorView: View {
         
         panel.begin { response in
             if response == .OK, let url = panel.url {
-                // 1. Load the image
                 if let image = NSImage(contentsOf: url) {
-                    // 2. Save it to our app's permanent storage
                     if let filename = ImageStorage.saveImage(image) {
-                        // 3. Create the Markdown tag
                         let markdown = "\n![Image](\(filename))\n"
-                        
-                        // 4. Insert at cursor position
                         insertTextAtCursor(markdown)
                     }
                 }
             }
         }
-        #endif
     }
     
     private func insertTextAtCursor(_ text: String) {
-        // Safety check: Ensure range is valid
         if selectedRange.location <= sheet.content.count {
-            // Convert String to NSString for safe range replacement
             let nsContent = sheet.content as NSString
             let newContent = nsContent.replacingCharacters(in: selectedRange, with: text)
-            
-            // Update the sheet
             sheet.content = newContent
             sheet.lastModified = Date()
-            
-            // Move cursor after the insertion (Optional polish)
             selectedRange = NSRange(location: selectedRange.location + text.count, length: 0)
         } else {
-            // Fallback: Append to end if cursor is lost
             sheet.content += text
         }
     }
     
-    // --- EXPORT LOGIC ---
     private func exportPDF() {
         guard let url = PDFCreator.createSimplePDF(title: sheet.title, content: sheet.content) else { return }
 
@@ -127,4 +116,5 @@ struct EditorView: View {
             }
         }
     }
+    #endif
 }

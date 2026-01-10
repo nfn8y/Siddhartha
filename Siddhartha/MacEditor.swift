@@ -3,13 +3,14 @@
 //  Siddhartha
 //
 
+// --- 1. THE GUARD START ---
+#if os(macOS)
 import SwiftUI
 import AppKit
 
-#if os(macOS)
 struct MacMarkdownEditor: NSViewRepresentable {
     @Binding var text: String
-    @Binding var selectedRange: NSRange // <--- NEW: Tracks your cursor
+    @Binding var selectedRange: NSRange
     
     var onTextChange: (String) -> Void
 
@@ -41,7 +42,6 @@ struct MacMarkdownEditor: NSViewRepresentable {
     func updateNSView(_ nsView: NSScrollView, context: Context) {
         guard let textView = nsView.documentView as? NSTextView else { return }
         
-        // Only update text if it's actually different (prevents cursor jumping)
         if textView.string != text {
             textView.string = text
         }
@@ -61,15 +61,12 @@ struct MacMarkdownEditor: NSViewRepresentable {
         func textDidChange(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
             
-            // Update Text
             parent.text = textView.string
             parent.onTextChange(textView.string)
             
-            // Highlight
             highlightSyntax(in: textView)
         }
         
-        // Track the cursor moving
         func textViewDidChangeSelection(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
             parent.selectedRange = textView.selectedRange
@@ -99,7 +96,6 @@ struct MacMarkdownEditor: NSViewRepresentable {
             let imageRegex = try! NSRegularExpression(pattern: imagePattern, options: [])
             imageRegex.enumerateMatches(in: textView.string, options: [], range: fullRange) { match, _, _ in
                 if let range = match?.range {
-                    // Make image tags purple
                     textStorage.addAttribute(.foregroundColor, value: NSColor.systemPurple, range: range)
                 }
             }
@@ -107,3 +103,4 @@ struct MacMarkdownEditor: NSViewRepresentable {
     }
 }
 #endif
+// --- 2. THE GUARD END ---

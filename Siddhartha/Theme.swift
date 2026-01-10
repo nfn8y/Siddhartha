@@ -6,13 +6,33 @@
 import SwiftUI
 
 struct Theme {
-    // A nice serif font for writing (like New York or Georgia)
-    static let writingFont: Font = .system(.body, design: .serif)
     
-    // A larger font for the title
-    static let titleFont: Font = .system(.title, design: .serif).weight(.bold)
+    // --- COLORS ---
+    static var paperBackground: Color {
+        #if os(macOS)
+        // Mac: Use the user's window background preference
+        return Color(nsColor: .textBackgroundColor)
+        #else
+        // iPhone: Use the standard system background (White/Black)
+        return Color(uiColor: .systemBackground)
+        #endif
+    }
     
-    // Soft colors for a "Paper" feel
-    static let paperBackground = Color(nsColor: .textBackgroundColor)
-    static let textColor = Color(nsColor: .labelColor)
+    // --- FONTS ---
+    static var titleFont: Font {
+        #if os(macOS)
+        return Font.custom("Georgia-Bold", size: 28)
+        #else
+        // iOS handles fonts slightly differently, "Georgia" is safe
+        return Font.custom("Georgia-Bold", size: 28)
+        #endif
+    }
+    
+    static var writingFont: Font {
+        #if os(macOS)
+        return Font.custom("Georgia", size: 18)
+        #else
+        return Font.custom("Georgia", size: 17)
+        #endif
+    }
 }
