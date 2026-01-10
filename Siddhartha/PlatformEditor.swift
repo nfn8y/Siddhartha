@@ -12,17 +12,20 @@ struct PlatformEditor: View {
     
     var body: some View {
         #if os(macOS)
-        // Load the Mac-Specific powerful editor
-        MacMarkdownEditor(text: $sheet.content, selectedRange: $selectedRange) { _ in
-            onTextChange()
-        }
+        MacMarkdownEditor(
+            text: $sheet.content,
+            selectedRange: $selectedRange,
+            onTextChange: { _ in onTextChange() }
+        )
         #else
-        // Load the iOS standard editor
-        TextEditor(text: $sheet.content)
-            .onChange(of: sheet.content) {
-                onTextChange()
-            }
-            .scrollContentBackground(.hidden)
+        // NOW USING THE SMART EDITOR ON iOS TOO
+        iOSMarkdownEditor(
+            text: $sheet.content,
+            selectedRange: $selectedRange,
+            onTextChange: { onTextChange() }
+        )
+        // Add a little padding for the iOS touch targets
+        .padding(.horizontal, 4)
         #endif
     }
 }
