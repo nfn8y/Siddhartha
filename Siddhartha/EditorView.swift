@@ -10,16 +10,16 @@ struct EditorView: View {
     @Bindable var sheet: Sheet
     @State private var selectedRange: NSRange = NSRange(location: 0, length: 0)
     
-    // Inject our services (Dependency Injection)
+    // Inject Services (Dependency Injection)
     private let theme = Services.shared.theme
     private let actions = Services.shared.actions
     private let storage = Services.shared.storage
-
+    
     var body: some View {
         VStack(spacing: 0) {
-            // Title
+            // Title Field
             TextField("Chapter Title", text: $sheet.title)
-                .font(theme.titleFont) // Using Service
+                .font(theme.titleFont)
                 .textFieldStyle(.plain)
                 .padding(.horizontal)
                 .padding(.top, 20)
@@ -28,8 +28,7 @@ struct EditorView: View {
             Divider().opacity(0.5)
             
             ZStack(alignment: .bottomTrailing) {
-                // PlatformEditor still handles the specific View differences internally
-                // (Views are harder to abstract than logic, but this is clean enough)
+                // Platform-Specific Editor (Mac vs iOS logic hidden here)
                 PlatformEditor(
                     sheet: sheet,
                     selectedRange: $selectedRange,
@@ -37,6 +36,7 @@ struct EditorView: View {
                 )
                 .padding(8)
                 
+                // Word Count Overlay
                 Text("\(sheet.wordCount) words")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -46,33 +46,84 @@ struct EditorView: View {
                     .padding()
             }
         }
-        .background(theme.paperBackground) // Using Service
+        .background(theme.paperBackground)
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                HStack {
-                    if actions.supportsImagePicker {
-                        Button(action: handleImagePick) {
-                            Image(systemName: "photo")
-                        }
+            // --- FORMATTING GROUP ---
+            ToolbarItemGroup(placement: .primaryAction) {
+                // Bold (*)
+                Button { applyFormat(start: "*") } label: {
+                    Image(systemName: "bold")
+                }
+                .help("Bold (*)")
+                .keyboardShortcut("b", modifiers: .command)
+                
+                // Italic (_)
+                Button { applyFormat(start: "_") } label: {
+                    Image(systemName: "italic")
+                }
+                .help("Italic (_)")
+                .keyboardShortcut("i", modifiers: .command)
+                
+                // Underline (<u>) - ASYMMETRIC WRAPPING
+                Button { applyFormat(start: "<u>", end: "</u>") } label: {
+                    Image(systemName: "underline")
+                }
+                .help("Underline (<u>)")
+                .keyboardShortcut("u", modifiers: .command)
+                
+                // Strikethrough (-)
+                Button { applyFormat(start: "-") } label: {
+                    Image(systemName: "strikethrough")
+                }
+                .help("Strikethrough (-)")
+                .keyboardShortcut("-", modifiers: .command)
+            }
+            
+            // --- ACTIONS GROUP (Image / Export) ---
+            ToolbarItemGroup(placement: .primaryAction) {
+                if actions.supportsImagePicker {
+                    Button(action: handleImagePick) {
+                        Image(systemName: "photo")
                     }
-                    
-                    if actions.supportsPDFExport {
-                        Button(action: handleExport) {
-                            Image(systemName: "square.and.arrow.up")
-                        }
+                    .help("Insert Image")
+                }
+                
+                if actions.supportsPDFExport {
+                    Button(action: handleExport) {
+                        Image(systemName: "square.and.arrow.up")
                     }
+                    .help("Export PDF")
                 }
             }
         }
     }
     
-    // --- PURE LOGIC HANDLERS ---
+    // --- FORMATTING LOGIC ---
+    private func applyFormat(start: String, end: String? = nil) {
+        // If no specific end symbol is provided, use the start symbol (symmetric)
+        let endSymbol = end ?? start
+        
+        let request = FormatManager.ToggleRequest(
+            content: sheet.content,
+            range: selectedRange,
+            startSymbol: start,
+            endSymbol: endSymbol
+        )
+        
+        if let result = FormatManager.toggle(request) {
+            sheet.content = result.newContent
+            selectedRange = result.newRange
+            sheet.lastModified = Date()
+        }
+    }
     
+    // --- ACTION LOGIC ---
     private func handleImagePick() {
         actions.pickImage { image in
             guard let image = image,
                   let filename = storage.saveImage(image) else { return }
             
+            // Insert Markdown Tag
             let markdown = "\n![Image](\(filename))\n"
             insertTextAtCursor(markdown)
         }
@@ -84,14 +135,18 @@ struct EditorView: View {
     }
     
     private func insertTextAtCursor(_ text: String) {
-        // (Same helper logic as before)
+        // Safety check
         if selectedRange.location <= sheet.content.count {
             let nsContent = sheet.content as NSString
             let newContent = nsContent.replacingCharacters(in: selectedRange, with: text)
+            
             sheet.content = newContent
             sheet.lastModified = Date()
+            
+            // Move cursor to end of inserted text
             selectedRange = NSRange(location: selectedRange.location + text.count, length: 0)
         } else {
+            // Fallback: Append to end
             sheet.content += text
         }
     }
