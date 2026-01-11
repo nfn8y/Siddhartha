@@ -150,7 +150,7 @@ struct EditorView: View {
         }
     }
     
-    private func handleExport() { 
+    private func handleExport() {
         guard let url = storage.createPDF(title: sheet.title, content: sheet.content) else { return }
         actions.exportPDF(url: url, title: sheet.title)
     }
