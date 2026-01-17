@@ -8,21 +8,26 @@ import SwiftData
 
 @Model
 final class Sheet {
+    var id: UUID
     var title: String
     var content: String
     var createdAt: Date
     var lastModified: Date
     
-    init(title: String = "Untitled", content: String = "") {
+    // --- NEW RELATIONSHIP ---
+    var folder: Folder?
+    
+    // Compute word count for the editor overlay
+    var wordCount: Int {
+        content.split { $0.isWhitespace || $0.isNewline }.count
+    }
+
+    init(title: String = "", content: String = "") {
+        self.id = UUID()
         self.title = title
         self.content = content
         self.createdAt = Date()
         self.lastModified = Date()
-    }
-    
-    // --- NEW: Testable Logic ---
-    var wordCount: Int {
-        if content.isEmpty { return 0 }
-        return content.split { $0.isWhitespace || $0.isNewline }.count
+        self.folder = nil // Defaults to "Inbox" (no folder)
     }
 }

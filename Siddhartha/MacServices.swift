@@ -7,24 +7,24 @@
 import SwiftUI
 import AppKit
 import PDFKit
-import UniformTypeIdentifiers // <--- THIS WAS MISSING
+import UniformTypeIdentifiers
 
 // --- THEME ---
 struct MacTheme: ThemeService {
     var paperBackground: Color { Color(nsColor: .textBackgroundColor) }
-    var titleFont: Font { .custom("Georgia-Bold", size: 28) }
-    var writingFont: Font { .custom("Georgia", size: 18) }
+    
+    // Now powered by AppConfig
+    var titleFont: Font { AppConfig.swiftUITitleFont }
+    var writingFont: Font { AppConfig.swiftUIWritingFont }
 }
 
 // --- STORAGE ---
 struct MacStorage: StorageService {
     func saveImage(_ image: PlatformImage) -> String? {
-        // Convert NSImage to Data
         guard let data = image.tiffRepresentation,
               let bitmap = NSBitmapImageRep(data: data),
               let jpegData = bitmap.representation(using: .jpeg, properties: [:]) else { return nil }
         
-        // Use the shared FileHelper
         return FileHelper.saveToDisk(data: jpegData)
     }
     
@@ -40,7 +40,7 @@ struct MacActions: ActionService {
     
     func pickImage(completion: @escaping (PlatformImage?) -> Void) {
         let panel = NSOpenPanel()
-        panel.allowedContentTypes = [.image] // Now this works!
+        panel.allowedContentTypes = [.image]
         panel.begin { response in
             if response == .OK, let url = panel.url {
                 completion(NSImage(contentsOf: url))
@@ -52,7 +52,7 @@ struct MacActions: ActionService {
     
     func exportPDF(url: URL, title: String) {
         let savePanel = NSSavePanel()
-        savePanel.allowedContentTypes = [.pdf] // Now this works!
+        savePanel.allowedContentTypes = [.pdf]
         savePanel.nameFieldStringValue = title.isEmpty ? "Untitled" : title
         savePanel.begin { response in
             if response == .OK, let targetURL = savePanel.url {

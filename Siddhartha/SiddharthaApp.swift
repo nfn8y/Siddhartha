@@ -12,7 +12,10 @@ struct SiddharthaApp: App {
     @Environment(\.colorScheme) private var colorScheme
     
     var sharedModelContainer: ModelContainer = {
-        let schema = Schema([Sheet.self])
+        let schema = Schema([
+            Folder.self,
+            Sheet.self
+        ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
         do {

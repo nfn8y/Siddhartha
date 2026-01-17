@@ -9,8 +9,6 @@ import UIKit
 
 struct iOSMarkdownEditor: UIViewRepresentable {
     @Binding var text: String
-    // We don't strictly need selectedRange binding for basic iOS editing,
-    // but if you want to track it for buttons, we can keep it simple for now.
     @Binding var selectedRange: NSRange
     var onTextChange: () -> Void
 
@@ -20,13 +18,11 @@ struct iOSMarkdownEditor: UIViewRepresentable {
         textView.isScrollEnabled = true
         textView.backgroundColor = .clear
         
-        // Match the Theme (Georgia)
-        textView.font = UIFont(name: "Georgia", size: 17)
+        // Use Global Config
+        textView.font = AppConfig.editorFont
         textView.textColor = UIColor.label
         
         textView.delegate = context.coordinator
-        
-        // Turn off smart quotes so they don't mess up our Markdown syntax
         textView.smartQuotesType = .no
         textView.smartDashesType = .no
         
@@ -34,7 +30,6 @@ struct iOSMarkdownEditor: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: UITextView, context: Context) {
-        // Only update if text actually changed to prevent cursor jumping
         if uiView.text != text {
             uiView.text = text
             context.coordinator.highlightSyntax(in: uiView)
@@ -54,7 +49,7 @@ struct iOSMarkdownEditor: UIViewRepresentable {
 
         func textViewDidChange(_ textView: UITextView) {
             parent.text = textView.text
-            parent.selectedRange = textView.selectedRange // Track cursor
+            parent.selectedRange = textView.selectedRange
             parent.onTextChange()
             highlightSyntax(in: textView)
         }
@@ -64,36 +59,22 @@ struct iOSMarkdownEditor: UIViewRepresentable {
         }
         
         func highlightSyntax(in textView: UITextView) {
-            // 1. Setup Base Style
             let text = textView.text ?? ""
-            let nsString = text as NSString
-            let fullRange = NSRange(location: 0, length: nsString.length)
-            
+            let fullRange = NSRange(location: 0, length: text.utf16.count)
             let attributedString = NSMutableAttributedString(string: text)
             
-            // Base Font (Georgia 17)
-            let baseFont = UIFont(name: "Georgia", size: 17) ?? UIFont.systemFont(ofSize: 17)
+            // 1. Base Style
+            let baseFont = AppConfig.editorFont
             attributedString.addAttribute(.font, value: baseFont, range: fullRange)
             attributedString.addAttribute(.foregroundColor, value: UIColor.label, range: fullRange)
             
-            // 2. Define Patterns (Exact same logic as Mac)
+            // 2. Define Patterns
             let patterns: [(pattern: String, traits: UIFontDescriptor.SymbolicTraits?, color: UIColor?, underline: Bool, strike: Bool)] = [
-                // Headings
                 ("^#{1,6}\\s.*$", .traitBold, .systemBlue, false, false),
-                
-                // Underline (<u>text</u>)
                 ("<u>(.+?)</u>", nil, nil, true, false),
-                
-                // Bold (*text*)
                 ("(?<!\\*)\\*(.+?)\\*(?!\\*)", .traitBold, nil, false, false),
-                
-                // Italic (_text_)
                 ("_(.+?)_", .traitItalic, nil, false, false),
-                
-                // Strikethrough (-text-)
                 ("-(.+?)-", nil, .secondaryLabel, false, true),
-                
-                // Image Tags
                 ("!\\[.*?\\]\\(.*?\\)", nil, .systemPurple, false, false)
             ]
             
@@ -103,25 +84,22 @@ struct iOSMarkdownEditor: UIViewRepresentable {
                 
                 regex.enumerateMatches(in: text, options: [], range: fullRange) { match, _, _ in
                     if let range = match?.range {
-                        // Apply Font Traits
+                        
+                        // Apply Font Traits (Optional on iOS)
                         if let traits = style.traits {
                             if let descriptor = baseFont.fontDescriptor.withSymbolicTraits(traits) {
-                                let newFont = UIFont(descriptor: descriptor, size: 17)
+                                let size = AppConfig.fontSizeiOS
+                                let newFont = UIFont(descriptor: descriptor, size: size)
                                 attributedString.addAttribute(.font, value: newFont, range: range)
                             }
                         }
                         
-                        // Apply Color
                         if let color = style.color {
                             attributedString.addAttribute(.foregroundColor, value: color, range: range)
                         }
-                        
-                        // Apply Strikethrough
                         if style.strike {
                             attributedString.addAttribute(.strikethroughStyle, value: NSUnderlineStyle.single.rawValue, range: range)
                         }
-                        
-                        // Apply Underline
                         if style.underline {
                             attributedString.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: range)
                         }
@@ -129,8 +107,7 @@ struct iOSMarkdownEditor: UIViewRepresentable {
                 }
             }
             
-            // 4. Update the View efficiently
-            // We need to save the selected range because setting attributedText resets the cursor
+            // 4. Update View (Preserve Cursor)
             let selectedRange = textView.selectedRange
             textView.attributedText = attributedString
             textView.selectedRange = selectedRange

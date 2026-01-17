@@ -11,11 +11,9 @@ import Combine
 #if os(macOS)
 import AppKit
 public typealias PlatformImage = NSImage
-public typealias PlatformColor = NSColor
 #else
 import UIKit
 public typealias PlatformImage = UIImage
-public typealias PlatformColor = UIColor
 #endif
 
 // 2. The Interfaces
