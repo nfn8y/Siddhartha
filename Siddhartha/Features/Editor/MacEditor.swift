@@ -21,12 +21,11 @@ struct MacMarkdownEditor: NSViewRepresentable {
         textView.isRichText = false
         textView.allowsUndo = true
         
-        // Use Global Config
+        // Use Global Theme
         textView.font = AppConfig.editorFont
         textView.backgroundColor = .clear
         textView.delegate = context.coordinator
         
-        // Layout Settings
         textView.minSize = NSSize(width: 0, height: scrollView.contentSize.height)
         textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
         textView.isVerticallyResizable = true
@@ -86,24 +85,26 @@ struct MacMarkdownEditor: NSViewRepresentable {
             textStorage.addAttribute(.font, value: baseFont, range: fullRange)
             textStorage.addAttribute(.foregroundColor, value: NSColor.labelColor, range: fullRange)
             
-            // 2. Define Patterns
-            let patterns: [(pattern: String, traits: NSFontDescriptor.SymbolicTraits?, color: NSColor?, underline: Bool, strike: Bool)] = [
-                ("^#{1,6}\\s.*$", .bold, .systemBlue, false, false),
-                ("<u>(.+?)</u>", nil, nil, true, false),
-                ("(?<!\\*)\\*(.+?)\\*(?!\\*)", .bold, nil, false, false),
-                ("_(.+?)_", .italic, nil, false, false),
-                ("-(.+?)-", nil, .secondaryLabelColor, false, true),
-                ("!\\[.*?\\]\\(.*?\\)", nil, .systemPurple, false, false)
+            // 2. Define Patterns (Using Singleton)
+            // We now store the Optional Regex object directly instead of the string pattern
+            let patterns: [(regex: NSRegularExpression?, traits: NSFontDescriptor.SymbolicTraits?, color: NSColor?, underline: Bool, strike: Bool)] = [
+                (RegexManager.shared.headingRegex, .bold, .systemBlue, false, false),
+                (RegexManager.shared.underlineRegex, nil, nil, true, false),
+                (RegexManager.shared.boldRegex, .bold, nil, false, false),
+                (RegexManager.shared.italicRegex, .italic, nil, false, false),
+                (RegexManager.shared.strikeRegex, nil, .secondaryLabelColor, false, true),
+                (RegexManager.shared.imageRegex, nil, .systemPurple, false, false)
             ]
             
             // 3. Apply Regex
             for style in patterns {
-                let regex = try! NSRegularExpression(pattern: style.pattern, options: [.anchorsMatchLines])
+                // Safely unwrap the pre-compiled regex
+                guard let regex = style.regex else { continue }
                 
                 regex.enumerateMatches(in: text, options: [], range: fullRange) { match, _, _ in
                     if let range = match?.range {
                         
-                        // Apply Font Traits (Non-Optional on Mac)
+                        // Apply Font Traits
                         if let traits = style.traits {
                             let newDescriptor = baseFont.fontDescriptor.withSymbolicTraits(traits)
                             let size = AppConfig.fontSizeMac

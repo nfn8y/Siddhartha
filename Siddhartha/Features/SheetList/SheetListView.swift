@@ -8,10 +8,10 @@ import SwiftData
 
 struct SheetListView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.theme) private var theme
     
-    // --- STATE ---
-    @State private var searchText = ""
-    @State private var showSearch = false
+    // --- CONNECT VIEW MODEL ---
+    @State private var viewModel = SheetListViewModel()
     @FocusState private var isSearchFocused: Bool
     
     let folder: Folder?
@@ -24,41 +24,38 @@ struct SheetListView: View {
             // 1. TOP HEADER (ICONS ROW)
             // =========================================
             #if os(macOS)
-            HStack(spacing: 20) { // Spacing between icons
-                Spacer() // Push everything to the right
+            HStack(spacing: 20) {
+                Spacer()
                 
                 // A. Search Toggle
                 Button(action: {
-                    withAnimation(.snappy) {
-                        showSearch.toggle()
-                        if !showSearch { searchText = "" }
-                    }
+                    viewModel.toggleSearch()
                 }) {
-                    Image(systemName: showSearch ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
-                        .font(.system(size: 22)) // Bigger Icon
-                        .foregroundStyle(showSearch ? .blue : .secondary)
+                    Image(systemName: viewModel.showSearch ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                        .font(.system(size: theme.sheetListIconSize))
+                        .foregroundStyle(viewModel.showSearch ? theme.iconActive : theme.iconInactive)
                 }
                 .buttonStyle(.plain)
                 
-                // B. New Sheet (Edit) Button
+                // B. New Sheet Button
                 Button(action: addSheet) {
                     Image(systemName: "square.and.pencil")
-                        .font(.system(size: 22)) // Bigger Icon
-                        .foregroundStyle(.secondary)
+                        .font(.system(size: theme.sheetListIconSize))
+                        .foregroundStyle(theme.iconInactive)
                 }
                 .buttonStyle(.plain)
             }
-            .padding(.top, 20)      // Push to the very top
-            .padding(.trailing, 20) // Right alignment padding
+            .padding(.top, 20)
+            .padding(.trailing, 20)
             .padding(.bottom, 10)
             #endif
 
             // =========================================
-            // 2. SEARCH BAR (Expands Below Icons)
+            // 2. SEARCH BAR
             // =========================================
             #if os(macOS)
-            if showSearch {
-                MacCustomSearchBar(searchText: $searchText, isFocused: $isSearchFocused)
+            if viewModel.showSearch {
+                MacCustomSearchBar(searchText: $viewModel.searchText, isFocused: $isSearchFocused)
                     .padding(.horizontal, 20)
                     .padding(.bottom, 15)
                     .transition(.move(edge: .top).combined(with: .opacity))
@@ -66,13 +63,13 @@ struct SheetListView: View {
             #endif
             
             // =========================================
-            // 3. FOLDER TITLE (Below Icons/Search)
+            // 3. FOLDER TITLE
             // =========================================
             #if os(macOS)
             HStack {
                 Text(folder?.name ?? "Inbox")
-                    .font(.system(size: 26, weight: .bold)) // Large, Heavy Title
-                    .foregroundStyle(.primary)
+                    .font(.system(size: theme.sheetListHeaderSize, weight: .bold))
+                    .foregroundStyle(theme.textPrimary)
                 Spacer()
             }
             .padding(.horizontal, 20)
@@ -82,12 +79,11 @@ struct SheetListView: View {
             // =========================================
             // 4. THE NOTE LIST
             // =========================================
-            FilteredSheetList(folder: folder, searchText: searchText, selectedSheet: $selectedSheet)
+            FilteredSheetList(folder: folder, searchText: viewModel.searchText, selectedSheet: $selectedSheet)
         }
-        // --- iOS BOTTOM BAR ---
         .safeAreaInset(edge: .bottom) {
             #if os(iOS)
-            iOSBottomSearchBar(searchText: $searchText, folder: folder, selectedSheet: $selectedSheet)
+            iOSBottomSearchBar(searchText: $viewModel.searchText, folder: folder, selectedSheet: $selectedSheet)
             #endif
         }
         #if os(iOS)
@@ -96,32 +92,34 @@ struct SheetListView: View {
         #endif
         
         // Auto-focus logic
-        .onChange(of: showSearch) { _, newValue in
+        .onChange(of: viewModel.showSearch) { _, newValue in
             if newValue {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                     isSearchFocused = true
                 }
             }
         }
+        // Sync Logic
+        .onChange(of: selectedSheet) { _, newValue in
+            viewModel.selectedSheet = newValue
+        }
+        .onChange(of: viewModel.selectedSheet) { _, newValue in
+            selectedSheet = newValue
+        }
     }
     
-    // Helper Action
     private func addSheet() {
-        withAnimation {
-            let newSheet = Sheet()
-            newSheet.folder = folder
-            modelContext.insert(newSheet)
-            selectedSheet = newSheet
-        }
+        viewModel.addSheet(context: modelContext, folder: folder)
     }
 }
 
 // ==========================================
-// MARK: - CUSTOM COMPONENTS (Unchanged)
+// MARK: - CUSTOM COMPONENTS
 // ==========================================
 
 #if os(macOS)
 struct MacCustomSearchBar: View {
+    @Environment(\.theme) private var theme
     @Binding var searchText: String
     var isFocused: FocusState<Bool>.Binding
     
@@ -133,14 +131,14 @@ struct MacCustomSearchBar: View {
                 HStack(spacing: 2) {
                     Text("ANYWHERE")
                         .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(theme.textSecondary)
                     Image(systemName: "chevron.down")
                         .font(.system(size: 9, weight: .bold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(theme.textSecondary)
                 }
                 .padding(.horizontal, 6)
                 .padding(.vertical, 4)
-                .background(Color.primary.opacity(0.1))
+                .background(theme.textPrimary.opacity(0.1))
                 .cornerRadius(4)
             }
             .menuStyle(.borderlessButton)
@@ -149,20 +147,20 @@ struct MacCustomSearchBar: View {
             
             TextField("Search", text: $searchText)
                 .textFieldStyle(.plain)
-                .font(.system(size: 13))
+                .font(.system(size: theme.searchBarTextSize))
                 .focused(isFocused)
             
             Image(systemName: "tag")
-                .font(.system(size: 14)) // Slightly bigger tag icon
-                .foregroundStyle(.secondary)
+                .font(.system(size: theme.searchBarTagSize))
+                .foregroundStyle(theme.textSecondary)
                 .padding(.horizontal, 8)
         }
         .padding(.vertical, 6)
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(theme.controlBackground)
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .overlay(
             RoundedRectangle(cornerRadius: 8)
-                .stroke(isFocused.wrappedValue ? Color.accentColor : Color.primary.opacity(0.1), lineWidth: 1)
+                .stroke(isFocused.wrappedValue ? theme.searchBarBorderActive : theme.searchBarBorderInactive, lineWidth: 1)
         )
     }
 }
@@ -171,39 +169,44 @@ struct MacCustomSearchBar: View {
 #if os(iOS)
 struct iOSBottomSearchBar: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.theme) private var theme
+    
     @Binding var searchText: String
     let folder: Folder?
     @Binding var selectedSheet: Sheet?
     
     var body: some View {
         HStack(spacing: 12) {
-            Button(action: { /* Add folder logic */ }) {
+            // New Folder
+            Button(action: { }) {
                 ZStack {
-                    Circle().fill(Color(uiColor: .secondarySystemFill))
+                    Circle().fill(theme.controlBackground)
                         .frame(width: 44, height: 44)
                     Image(systemName: "folder.badge.plus")
                         .font(.system(size: 18))
-                        .foregroundStyle(.primary)
+                        .foregroundStyle(theme.textPrimary)
                 }
             }
             
+            // Search Bar
             HStack {
                 Image(systemName: "magnifyingglass")
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(theme.textSecondary)
                 TextField("Search", text: $searchText)
             }
             .padding(.vertical, 10)
             .padding(.horizontal, 12)
-            .background(Color(uiColor: .secondarySystemFill))
+            .background(theme.controlBackground)
             .clipShape(Capsule())
             
+            // New Sheet
             Button(action: addSheet) {
                 ZStack {
-                    Circle().fill(Color(uiColor: .secondarySystemFill))
+                    Circle().fill(theme.controlBackground)
                         .frame(width: 44, height: 44)
                     Image(systemName: "square.and.pencil")
                         .font(.system(size: 18))
-                        .foregroundStyle(.primary)
+                        .foregroundStyle(theme.textPrimary)
                 }
             }
         }
@@ -225,11 +228,13 @@ struct iOSBottomSearchBar: View {
 #endif
 
 // ==========================================
-// MARK: - FILTER LOGIC (Unchanged)
+// MARK: - FILTER LOGIC
 // ==========================================
 
 private struct FilteredSheetList: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.theme) private var theme
+    
     let folder: Folder?
     let searchText: String
     @Binding var selectedSheet: Sheet?
@@ -261,12 +266,12 @@ private struct FilteredSheetList: View {
                 NavigationLink(value: sheet) {
                     VStack(alignment: .leading, spacing: 6) {
                         Text(sheet.title.isEmpty ? "New Sheet" : sheet.title)
-                            .font(.system(size: 15, weight: .bold))
-                            .foregroundStyle(.primary)
+                            .font(.system(size: theme.sheetListRowTitleSize, weight: .bold))
+                            .foregroundStyle(theme.textPrimary)
                             .lineLimit(1)
                         Text(previewText(for: sheet))
-                            .font(.system(size: 14))
-                            .foregroundStyle(.secondary)
+                            .font(.system(size: theme.sheetListPreviewSize))
+                            .foregroundStyle(theme.textSecondary)
                             .lineLimit(3)
                             .lineSpacing(3)
                             .frame(maxWidth: .infinity, alignment: .leading)

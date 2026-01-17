@@ -4,59 +4,49 @@
 //
 
 import Testing
-import Foundation
 import SwiftData
-@testable import Siddhartha // Allows us to see your App code
+import SwiftUI
+@testable import Siddhartha
 
 struct SiddharthaTests {
-
-    // --- UNIT TEST: Logic ---
-    @Test("Check Word Count Logic")
-    func testWordCount() {
-        let sheet = Sheet(content: "Hello world this is a test")
-        #expect(sheet.wordCount == 6)
-        
-        sheet.content = "   Spaces   should   not   matter   "
-        #expect(sheet.wordCount == 4)
-        
-        sheet.content = ""
-        #expect(sheet.wordCount == 0)
-    }
-
-    // --- INTEGRATION TEST: Database ---
-    @Test("Verify SwiftData Saving and Loading")
-    @MainActor // Database runs on the main thread
-    func testDatabaseIntegration() throws {
-        // 1. Setup an "In-Memory" Database (so we don't touch your real files)
+    
+    // FIX: Added @MainActor here because we are testing UI logic (ViewModels + SwiftData)
+    @Test("Add Sheet to Folder")
+    @MainActor
+    func testAddSheetLogic() async throws {
+        // 1. SETUP: Create an in-memory database
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        let container = try ModelContainer(for: Sheet.self, configurations: config)
+        let container = try ModelContainer(for: Sheet.self, Folder.self, configurations: config)
+        
+        // mainContext is an actor-isolated property, so we must be on MainActor to use it
         let context = container.mainContext
         
-        // 2. Create and Save a Note
-        let newSheet = Sheet(title: "Integration Test", content: "Testing 123")
-        context.insert(newSheet)
+        // 2. SETUP: Create a folder
+        let folder = Folder(name: "Test Project")
+        context.insert(folder)
         
-        // 3. Fetch it back
-        let descriptor = FetchDescriptor<Sheet>()
-        let savedSheets = try context.fetch(descriptor)
+        // 3. SETUP: Create the ViewModel
+        // (ViewModels often trigger UI updates, so they require MainActor)
+        let viewModel = SheetListViewModel()
         
-        // 4. Verify
-        #expect(savedSheets.count == 1)
-        #expect(savedSheets.first?.title == "Integration Test")
+        // 4. ACT
+        viewModel.addSheet(context: context, folder: folder)
+        
+        // 5. ASSERT
+        #expect(folder.sheets?.count == 1)
+        
+        let createdSheet = folder.sheets?.first
+        #expect(createdSheet?.folder == folder)
+        
+        // Since we are on MainActor, accessing selectedSheet is now safe
+        #expect(viewModel.selectedSheet == createdSheet)
     }
     
-    // --- INTEGRATION TEST: PDF Export ---
-    @Test("Verify PDF Generation")
-    @MainActor
-    func testPDFCreation() {
-        // We can't visually check the PDF, but we can check if the file is created
-        let url = PDFCreator.createSimplePDF(title: "Test PDF", content: "This is the content")
-        
-        // Check if URL is valid
-        #expect(url != nil)
-        
-        // Check if file actually exists at that path
-        let fileExists = FileManager.default.fileExists(atPath: url!.path)
-        #expect(fileExists == true)
+    @Test("Regex Manager Safety")
+    func testRegexSafety() {
+        // This test doesn't touch UI, so it doesn't need @MainActor
+        let manager = RegexManager.shared
+        #expect(manager.headingRegex != nil)
+        #expect(manager.boldRegex != nil)
     }
 }

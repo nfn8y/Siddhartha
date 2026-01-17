@@ -18,7 +18,6 @@ struct iOSMarkdownEditor: UIViewRepresentable {
         textView.isScrollEnabled = true
         textView.backgroundColor = .clear
         
-        // Use Global Config
         textView.font = AppConfig.editorFont
         textView.textColor = UIColor.label
         
@@ -68,24 +67,24 @@ struct iOSMarkdownEditor: UIViewRepresentable {
             attributedString.addAttribute(.font, value: baseFont, range: fullRange)
             attributedString.addAttribute(.foregroundColor, value: UIColor.label, range: fullRange)
             
-            // 2. Define Patterns
-            let patterns: [(pattern: String, traits: UIFontDescriptor.SymbolicTraits?, color: UIColor?, underline: Bool, strike: Bool)] = [
-                ("^#{1,6}\\s.*$", .traitBold, .systemBlue, false, false),
-                ("<u>(.+?)</u>", nil, nil, true, false),
-                ("(?<!\\*)\\*(.+?)\\*(?!\\*)", .traitBold, nil, false, false),
-                ("_(.+?)_", .traitItalic, nil, false, false),
-                ("-(.+?)-", nil, .secondaryLabel, false, true),
-                ("!\\[.*?\\]\\(.*?\\)", nil, .systemPurple, false, false)
+            // 2. Define Patterns (Using Singleton)
+            let patterns: [(regex: NSRegularExpression?, traits: UIFontDescriptor.SymbolicTraits?, color: UIColor?, underline: Bool, strike: Bool)] = [
+                (RegexManager.shared.headingRegex, .traitBold, .systemBlue, false, false),
+                (RegexManager.shared.underlineRegex, nil, nil, true, false),
+                (RegexManager.shared.boldRegex, .traitBold, nil, false, false),
+                (RegexManager.shared.italicRegex, .traitItalic, nil, false, false),
+                (RegexManager.shared.strikeRegex, nil, .secondaryLabel, false, true),
+                (RegexManager.shared.imageRegex, nil, .systemPurple, false, false)
             ]
             
             // 3. Apply Regex
             for style in patterns {
-                let regex = try! NSRegularExpression(pattern: style.pattern, options: [.anchorsMatchLines])
+                // Safely unwrap
+                guard let regex = style.regex else { continue }
                 
                 regex.enumerateMatches(in: text, options: [], range: fullRange) { match, _, _ in
                     if let range = match?.range {
                         
-                        // Apply Font Traits (Optional on iOS)
                         if let traits = style.traits {
                             if let descriptor = baseFont.fontDescriptor.withSymbolicTraits(traits) {
                                 let size = AppConfig.fontSizeiOS
@@ -97,9 +96,11 @@ struct iOSMarkdownEditor: UIViewRepresentable {
                         if let color = style.color {
                             attributedString.addAttribute(.foregroundColor, value: color, range: range)
                         }
+                        
                         if style.strike {
                             attributedString.addAttribute(.strikethroughStyle, value: NSUnderlineStyle.single.rawValue, range: range)
                         }
+                        
                         if style.underline {
                             attributedString.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: range)
                         }
