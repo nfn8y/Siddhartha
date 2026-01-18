@@ -9,13 +9,14 @@ import SwiftData
 struct SheetListView: View {
     @Environment(\.modelContext) private var modelContext
     
+    // 1. Introduce the ViewModel
+    @State private var viewModel = SheetListViewModel()
+    
     let folder: Folder?
     @Binding var selectedSheet: Sheet?
     
-    // REMOVED: @Query (It moved to the child view)
-    
     var body: some View {
-        // UPDATED: Using the new sub-view
+        // We still pass the binding directly to the filtered list
         FilteredSheetList(folder: folder, selectedSheet: $selectedSheet)
             .navigationTitle(folder?.name ?? "Inbox")
             .toolbar {
@@ -27,11 +28,12 @@ struct SheetListView: View {
             }
     }
     
+    // 2. Updated Action using ViewModel
     private func addSheet() {
         withAnimation {
-            let newSheet = Sheet()
-            newSheet.folder = folder
-            modelContext.insert(newSheet)
+            // The VM creates it, the View selects it.
+            // This maintains the "Green State" behavior while using MVVM.
+            let newSheet = viewModel.addSheet(context: modelContext, folder: folder)
             selectedSheet = newSheet
         }
     }
