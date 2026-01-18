@@ -12,9 +12,8 @@ struct FilteredSheetList: View {
     
     let folder: Folder?
     
-    // Binding for search text
     @Binding var searchText: String
-    
+    @Binding var searchScope: SearchScope
     @Binding var showSearch: Bool
     @Binding var selectedSheet: Sheet?
     let addSheetAction: () -> Void
@@ -22,33 +21,55 @@ struct FilteredSheetList: View {
     @Query private var sheets: [Sheet]
     @FocusState private var isSearchFocused: Bool
     
-    init(folder: Folder?, searchText: Binding<String>, showSearch: Binding<Bool>, selectedSheet: Binding<Sheet?>, addSheetAction: @escaping () -> Void) {
+    init(folder: Folder?, searchText: Binding<String>, searchScope: Binding<SearchScope>, showSearch: Binding<Bool>, selectedSheet: Binding<Sheet?>, addSheetAction: @escaping () -> Void) {
         self.folder = folder
         self._searchText = searchText
+        self._searchScope = searchScope
         self._showSearch = showSearch
         self._selectedSheet = selectedSheet
         self.addSheetAction = addSheetAction
         
         let folderID = folder?.id
         let search = searchText.wrappedValue
+        let scope = searchScope.wrappedValue
         
-        if let folderID {
-            _sheets = Query(filter: #Predicate<Sheet> { sheet in
-                (sheet.folder?.id == folderID) &&
-                (search.isEmpty || sheet.title.localizedStandardContains(search) || sheet.content.localizedStandardContains(search))
-            }, sort: \Sheet.createdAt, order: .reverse)
+        // QUERY LOGIC
+        if search.isEmpty {
+            if let folderID {
+                _sheets = Query(filter: #Predicate<Sheet> { sheet in
+                    sheet.folder?.id == folderID
+                }, sort: \Sheet.createdAt, order: .reverse)
+            } else {
+                _sheets = Query(filter: #Predicate<Sheet> { sheet in
+                    sheet.folder == nil
+                }, sort: \Sheet.createdAt, order: .reverse)
+            }
         } else {
-            _sheets = Query(filter: #Predicate<Sheet> { sheet in
-                (sheet.folder == nil) &&
-                (search.isEmpty || sheet.title.localizedStandardContains(search) || sheet.content.localizedStandardContains(search))
-            }, sort: \Sheet.createdAt, order: .reverse)
+            if scope == .all {
+                _sheets = Query(filter: #Predicate<Sheet> { sheet in
+                    sheet.title.localizedStandardContains(search) ||
+                    sheet.content.localizedStandardContains(search)
+                }, sort: \Sheet.createdAt, order: .reverse)
+            } else {
+                if let folderID {
+                    _sheets = Query(filter: #Predicate<Sheet> { sheet in
+                        (sheet.folder?.id == folderID) &&
+                        (sheet.title.localizedStandardContains(search) ||
+                         sheet.content.localizedStandardContains(search))
+                    }, sort: \Sheet.createdAt, order: .reverse)
+                } else {
+                    _sheets = Query(filter: #Predicate<Sheet> { sheet in
+                        (sheet.folder == nil) &&
+                        (sheet.title.localizedStandardContains(search) ||
+                         sheet.content.localizedStandardContains(search))
+                    }, sort: \Sheet.createdAt, order: .reverse)
+                }
+            }
         }
     }
     
     var body: some View {
         List(selection: $selectedSheet) {
-            
-            // Section Header contains all our custom UI
             Section {
                 ForEach(sheets) { sheet in
                     NavigationLink(value: sheet) {
@@ -72,11 +93,16 @@ struct FilteredSheetList: View {
             } header: {
                 VStack(spacing: 0) {
                     #if os(macOS)
-                    // 1. ICONS ROW
+                    // 1. ICONS
                     HStack(spacing: theme.headerPaddingHorizontal) {
                         Spacer()
+                        
+                        // Search Toggle with Logic to Clear Text
                         Button(action: {
-                            withAnimation(.snappy) { showSearch.toggle() }
+                            withAnimation(.snappy) {
+                                showSearch.toggle()
+                                if !showSearch { searchText = "" }
+                            }
                         }) {
                             Image(systemName: showSearch ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
                                 .font(.system(size: theme.sheetListIconSize))
@@ -91,38 +117,44 @@ struct FilteredSheetList: View {
                         }
                         .buttonStyle(.plain)
                     }
-                    // FIXED: Replaced hardcoded '10' with theme constants
-                    // We use headerPaddingBottom for the top here to keep it tighter inside the List Header
-                    .padding(.top, theme.headerPaddingBottom)
+                    .padding(.top, theme.headerPaddingTop)
                     .padding(.trailing, theme.headerPaddingHorizontal)
                     .padding(.bottom, theme.headerPaddingBottom)
                     
-                    // 2. SEARCH BAR ROW
+                    // 2. SEARCH BAR
                     if showSearch {
-                        MacCustomSearchBar(searchText: $searchText, isFocused: $isSearchFocused)
-                            .padding(.horizontal, theme.headerPaddingHorizontal)
-                            // FIXED: Replaced '15' with theme constant
-                            .padding(.bottom, theme.searchBarPaddingBottom)
+                        MacCustomSearchBar(
+                            searchText: $searchText,
+                            searchScope: $searchScope,
+                            isFocused: $isSearchFocused
+                        )
+                        .padding(.horizontal, theme.headerPaddingHorizontal)
+                        .padding(.bottom, theme.searchBarPaddingBottom)
                     }
                     
-                    // 3. FOLDER TITLE ROW
+                    // 3. TITLE
                     HStack {
-                        Text(folder?.name ?? "Inbox")
+                        Text(titleText)
                             .font(.system(size: theme.sheetListHeaderSize, weight: .bold))
                             .foregroundStyle(theme.textPrimary)
                         Spacer()
                     }
                     .padding(.horizontal, theme.headerPaddingHorizontal)
-                    // FIXED: Replaced '10' with theme constant
                     .padding(.bottom, theme.headerPaddingBottom)
                     
-                    // 4. SEPARATOR
                     Divider()
                     #endif
                 }
             }
         }
         .listStyle(.sidebar)
+    }
+    
+    private var titleText: String {
+        if showSearch && !searchText.isEmpty && searchScope == .all {
+            return "All Sheets"
+        }
+        return folder?.name ?? "Inbox"
     }
     
     private func previewText(for sheet: Sheet) -> String {

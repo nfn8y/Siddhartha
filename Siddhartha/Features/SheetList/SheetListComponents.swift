@@ -5,31 +5,40 @@
 
 import SwiftUI
 
-// ==========================================
-// MARK: - MAC SEARCH BAR
-// ==========================================
-
 #if os(macOS)
 struct MacCustomSearchBar: View {
     @Environment(\.theme) private var theme
+    
     @Binding var searchText: String
+    @Binding var searchScope: SearchScope // <--- NEW BINDING
+    
     var isFocused: FocusState<Bool>.Binding
     
     var body: some View {
         HStack(spacing: 0) {
-            // Dropdown Menu (Visual Only for now)
-            HStack(spacing: 2) {
-                Text("ANYWHERE")
-                    .font(.system(size: theme.menuTextSize, weight: .bold))
-                    .foregroundStyle(theme.textSecondary)
-                Image(systemName: "chevron.down")
-                    .font(.system(size: theme.menuChevronSize, weight: .bold))
-                    .foregroundStyle(theme.textSecondary)
+            // Dropdown Menu
+            Menu {
+                Picker("Scope", selection: $searchScope) {
+                    Text("Anywhere").tag(SearchScope.all)
+                    Text("Current Folder").tag(SearchScope.current)
+                }
+                .pickerStyle(.inline)
+            } label: {
+                HStack(spacing: 2) {
+                    // Dynamic Label based on selection
+                    Text(searchScope == .all ? "ANYWHERE" : "FOLDER")
+                        .font(.system(size: theme.menuTextSize, weight: .bold))
+                        .foregroundStyle(theme.textSecondary)
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: theme.menuChevronSize, weight: .bold))
+                        .foregroundStyle(theme.textSecondary)
+                }
+                .padding(.horizontal, theme.searchBarMenuPaddingHorizontal)
+                .padding(.vertical, theme.searchBarMenuPaddingVertical)
+                .background(theme.textPrimary.opacity(0.1))
+                .cornerRadius(4)
             }
-            .padding(.horizontal, theme.searchBarMenuPaddingHorizontal)
-            .padding(.vertical, theme.searchBarMenuPaddingVertical)
-            .background(theme.textPrimary.opacity(0.1))
-            .cornerRadius(4)
+            .menuStyle(.borderlessButton)
             .padding(.horizontal, 5)
             
             // Text Field
@@ -55,12 +64,10 @@ struct MacCustomSearchBar: View {
 }
 #endif
 
-// ==========================================
-// MARK: - iOS BOTTOM BAR
-// ==========================================
-
+// (Keep iOSBottomSearchBar as is, or update similarly if needed)
 #if os(iOS)
 struct iOSBottomSearchBar: View {
+    // ... (Keep existing code) ...
     @Environment(\.modelContext) private var modelContext
     @Environment(\.theme) private var theme
     
