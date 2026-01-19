@@ -37,6 +37,40 @@
 			);
 			target = 9602C0142F10343B005D588E /* Siddhartha */;
 		};
+		962C5A672F1EC27700BB48B4 /* Exceptions for "Siddhartha" folder in "SiddharthaTests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Features/Library/Folder.swift,
+				Features/Library/FolderListView.swift,
+				Features/SheetList/Sheet.swift,
+				Shared/Config/AccessibilityIDs.swift,
+			);
+			target = 9602C0252F10343C005D588E /* SiddharthaTests */;
+		};
+		962C5A682F1EC27700BB48B4 /* Exceptions for "Siddhartha" folder in "SiddharthaUITests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Features/Library/Folder.swift,
+				Features/Library/FolderListView.swift,
+				Features/SheetList/Sheet.swift,
+				Shared/Config/AccessibilityIDs.swift,
+			);
+			target = 9602C02F2F10343C005D588E /* SiddharthaUITests */;
+		};
+		96E6A9CA2F1E4A9B0057D76B /* Exceptions for "SiddharthaUITests" folder in "Siddhartha" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				SiddharthaUITests.swift,
+			);
+			target = 9602C0142F10343B005D588E /* Siddhartha */;
+		};
+		96E6A9CC2F1E4A9B0057D76B /* Exceptions for "SiddharthaUITests" folder in "SiddharthaUITests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				SiddharthaUITests.swift,
+			);
+			target = 9602C02F2F10343C005D588E /* SiddharthaUITests */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -44,6 +78,8 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				9602C0382F10343C005D588E /* Exceptions for "Siddhartha" folder in "Siddhartha" target */,
+				962C5A672F1EC27700BB48B4 /* Exceptions for "Siddhartha" folder in "SiddharthaTests" target */,
+				962C5A682F1EC27700BB48B4 /* Exceptions for "Siddhartha" folder in "SiddharthaUITests" target */,
 			);
 			path = Siddhartha;
 			sourceTree = "<group>";
@@ -51,6 +87,15 @@
 		9602C0292F10343C005D588E /* SiddharthaTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = SiddharthaTests;
+			sourceTree = "<group>";
+		};
+		96E6A9C92F1E4A8D0057D76B /* SiddharthaUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				96E6A9CA2F1E4A9B0057D76B /* Exceptions for "SiddharthaUITests" folder in "Siddhartha" target */,
+				96E6A9CC2F1E4A9B0057D76B /* Exceptions for "SiddharthaUITests" folder in "SiddharthaUITests" target */,
+			);
+			path = SiddharthaUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -83,6 +128,7 @@
 		9602C00C2F10343B005D588E = {
 			isa = PBXGroup;
 			children = (
+				96E6A9C92F1E4A8D0057D76B /* SiddharthaUITests */,
 				9602C0172F10343B005D588E /* Siddhartha */,
 				9602C0292F10343C005D588E /* SiddharthaTests */,
 				9602C0162F10343B005D588E /* Products */,
@@ -116,6 +162,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				9602C0172F10343B005D588E /* Siddhartha */,
+				96E6A9C92F1E4A8D0057D76B /* SiddharthaUITests */,
 			);
 			name = Siddhartha;
 			packageProductDependencies = (
@@ -186,6 +233,7 @@
 					};
 					9602C02F2F10343C005D588E = {
 						CreatedOnToolsVersion = 26.2;
+						LastSwiftMigration = 2620;
 						TestTargetID = 9602C0142F10343B005D588E;
 					};
 				};
@@ -546,6 +594,7 @@
 		9602C0422F10343C005D588E /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -559,6 +608,7 @@
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
@@ -570,6 +620,7 @@
 		9602C0432F10343C005D588E /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;

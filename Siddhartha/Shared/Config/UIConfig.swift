@@ -2,15 +2,19 @@
 //  UIConfig.swift
 //  Siddhartha
 //
-//  This file contains pure UI layout constants (Padding, Sizes).
-//  It does not interfere with the AppServices architecture.
-//
 
 import SwiftUI
 
 struct AppTheme {
+    // --- FONTS ---
+    let fontName: String = "Georgia"
+    let fontSize: CGFloat = 14
+    
+    var uiFont: Font {
+        .custom(fontName, size: fontSize)
+    }
+    
     // --- COLORS ---
-    // We define these here for UI convenience, even if ThemeService has them too.
     var textPrimary: Color = .primary
     var textSecondary: Color = .secondary
     var controlBackground: Color = Color(nsColor: .controlBackgroundColor)
@@ -20,19 +24,20 @@ struct AppTheme {
     var searchBarBorderInactive: Color = .gray.opacity(0.3)
     
     // --- LAYOUT CONSTANTS ---
-    
-    // Sheet List Header
+    // Header
     let headerPaddingTop: CGFloat = 20
     let headerPaddingHorizontal: CGFloat = 20
     let headerPaddingBottom: CGFloat = 10
+    let headerContainerSpacing: CGFloat = 0 // New: Was hardcoded to 0
+    let headerButtonSpacing: CGFloat = 16   // New: Was using headerPaddingHorizontal (20) which is too wide for icons
     
-    // Header Icons
-    let sheetListIconSize: CGFloat = 16
-    let sheetListHeaderSize: CGFloat = 13 // For "Inbox" title
-    
-    // List Row
+    // List Rows
+    let sheetListRowPaddingVertical: CGFloat = 4
+    let sheetListRowSpacing: CGFloat = 6
     let sheetListRowTitleSize: CGFloat = 13
     let sheetListPreviewSize: CGFloat = 12
+    let sheetListIconSize: CGFloat = 16
+    let sheetListHeaderSize: CGFloat = 13
     
     // Search Bar
     let searchBarPaddingBottom: CGFloat = 15
@@ -44,7 +49,7 @@ struct AppTheme {
     let searchBarTextSize: CGFloat = 13
     let searchBarTagSize: CGFloat = 10
     
-    // iOS Bottom Bar
+    // iOS Specific
     let iosBottomBarHeight: CGFloat = 44
     let iosBottomBarPaddingTop: CGFloat = 8
     let iosBottomBarPaddingBottom: CGFloat = 4
@@ -52,12 +57,11 @@ struct AppTheme {
     let iosSearchVerticalPadding: CGFloat = 10
     let iosSearchHorizontalPadding: CGFloat = 12
     
-    // Menu Small Details
+    // Menu
     let menuTextSize: CGFloat = 11
     let menuChevronSize: CGFloat = 9
 }
 
-// Environment Key to access this from Views
 struct AppThemeKey: EnvironmentKey {
     static let defaultValue = AppTheme()
 }

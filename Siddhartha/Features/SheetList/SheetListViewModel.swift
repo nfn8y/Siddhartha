@@ -7,10 +7,10 @@ import SwiftUI
 import SwiftData
 
 enum SearchScope: String, CaseIterable, Identifiable {
-    case current = "Current Folder"
-    case all = "All Folders"
+    case all
+    case currentFolder // This was likely missing or named '.folder'
     
-    var id: String { self.rawValue }
+    var id: String { rawValue }
 }
 
 @Observable

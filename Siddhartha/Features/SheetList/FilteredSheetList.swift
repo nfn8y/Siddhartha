@@ -33,35 +33,27 @@ struct FilteredSheetList: View {
         let search = searchText.wrappedValue
         let scope = searchScope.wrappedValue
         
-        // QUERY LOGIC
         if search.isEmpty {
             if let folderID {
-                _sheets = Query(filter: #Predicate<Sheet> { sheet in
-                    sheet.folder?.id == folderID
-                }, sort: \Sheet.createdAt, order: .reverse)
+                _sheets = Query(filter: #Predicate<Sheet> { sheet in sheet.folder?.id == folderID }, sort: \Sheet.createdAt, order: .reverse)
             } else {
-                _sheets = Query(filter: #Predicate<Sheet> { sheet in
-                    sheet.folder == nil
-                }, sort: \Sheet.createdAt, order: .reverse)
+                _sheets = Query(filter: #Predicate<Sheet> { sheet in sheet.folder == nil }, sort: \Sheet.createdAt, order: .reverse)
             }
         } else {
             if scope == .all {
                 _sheets = Query(filter: #Predicate<Sheet> { sheet in
-                    sheet.title.localizedStandardContains(search) ||
-                    sheet.content.localizedStandardContains(search)
+                    sheet.title.localizedStandardContains(search) || sheet.content.localizedStandardContains(search)
                 }, sort: \Sheet.createdAt, order: .reverse)
             } else {
                 if let folderID {
                     _sheets = Query(filter: #Predicate<Sheet> { sheet in
                         (sheet.folder?.id == folderID) &&
-                        (sheet.title.localizedStandardContains(search) ||
-                         sheet.content.localizedStandardContains(search))
+                        (sheet.title.localizedStandardContains(search) || sheet.content.localizedStandardContains(search))
                     }, sort: \Sheet.createdAt, order: .reverse)
                 } else {
                     _sheets = Query(filter: #Predicate<Sheet> { sheet in
                         (sheet.folder == nil) &&
-                        (sheet.title.localizedStandardContains(search) ||
-                         sheet.content.localizedStandardContains(search))
+                        (sheet.title.localizedStandardContains(search) || sheet.content.localizedStandardContains(search))
                     }, sort: \Sheet.createdAt, order: .reverse)
                 }
             }
@@ -70,90 +62,91 @@ struct FilteredSheetList: View {
     
     var body: some View {
         List(selection: $selectedSheet) {
-            Section {
-                ForEach(sheets) { sheet in
-                    NavigationLink(value: sheet) {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(sheet.title.isEmpty ? "New Sheet" : sheet.title)
-                                .font(.system(size: theme.sheetListRowTitleSize, weight: .bold))
-                                .lineLimit(1)
-                            
-                            Text(previewText(for: sheet))
-                                .font(.system(size: theme.sheetListPreviewSize))
-                                .foregroundStyle(.secondary)
-                                .lineLimit(2)
-                        }
-                        .padding(.vertical, 4)
+            ForEach(sheets) { sheet in
+                NavigationLink(value: sheet) {
+                    VStack(alignment: .leading, spacing: theme.sheetListRowSpacing) {
+                        Text(sheet.title.isEmpty ? "New Sheet" : sheet.title)
+                            .font(.system(size: theme.sheetListRowTitleSize, weight: .bold))
+                            .lineLimit(1)
+                        
+                        Text(previewText(for: sheet))
+                            .font(.system(size: theme.sheetListPreviewSize))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
                     }
-                    .contextMenu {
-                        Button("Delete", role: .destructive) { deleteSheet(sheet) }
-                    }
+                    .padding(.vertical, theme.sheetListRowPaddingVertical)
                 }
-                .onDelete(perform: deleteSheets)
-            } header: {
-                VStack(spacing: 0) {
-                    #if os(macOS)
-                    // 1. ICONS
-                    HStack(spacing: theme.headerPaddingHorizontal) {
-                        Spacer()
-                        
-                        // Search Toggle with Logic to Clear Text
-                        Button(action: {
-                            withAnimation(.snappy) {
-                                showSearch.toggle()
-                                if !showSearch { searchText = "" }
-                            }
-                        }) {
-                            Image(systemName: showSearch ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
-                                .font(.system(size: theme.sheetListIconSize))
-                                .foregroundStyle(showSearch ? theme.iconActive : theme.iconInactive)
-                        }
-                        .buttonStyle(.plain)
-                        
-                        Button(action: addSheetAction) {
-                            Image(systemName: "square.and.pencil")
-                                .font(.system(size: theme.sheetListIconSize))
-                                .foregroundStyle(theme.iconInactive)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    .padding(.top, theme.headerPaddingTop)
-                    .padding(.trailing, theme.headerPaddingHorizontal)
-                    .padding(.bottom, theme.headerPaddingBottom)
-                    
-                    // 2. SEARCH BAR
-                    if showSearch {
-                        MacCustomSearchBar(
-                            searchText: $searchText,
-                            searchScope: $searchScope,
-                            isFocused: $isSearchFocused
-                        )
-                        .padding(.horizontal, theme.headerPaddingHorizontal)
-                        .padding(.bottom, theme.searchBarPaddingBottom)
-                    }
-                    
-                    // 3. TITLE
-                    HStack {
-                        Text(titleText)
-                            .font(.system(size: theme.sheetListHeaderSize, weight: .bold))
-                            .foregroundStyle(theme.textPrimary)
-                        Spacer()
-                    }
-                    .padding(.horizontal, theme.headerPaddingHorizontal)
-                    .padding(.bottom, theme.headerPaddingBottom)
-                    
-                    Divider()
-                    #endif
+                .accessibilityIdentifier(AccessibilityIDs.SheetList.row(title: sheet.title))
+                .contextMenu {
+                    Button("Delete", role: .destructive) { deleteSheet(sheet) }
                 }
             }
+            .onDelete(perform: deleteSheets)
         }
         .listStyle(.sidebar)
+        .safeAreaInset(edge: .top, spacing: 0) {
+            VStack(spacing: theme.headerContainerSpacing) {
+                #if os(macOS)
+                HStack(spacing: theme.headerButtonSpacing) {
+                    Spacer()
+                    
+                    Button(action: {
+                        withAnimation(.snappy) {
+                            showSearch.toggle()
+                            if !showSearch { searchText = "" }
+                        }
+                    }) {
+                        Image(systemName: showSearch ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                            .font(.system(size: theme.sheetListIconSize))
+                            .foregroundStyle(showSearch ? theme.iconActive : theme.iconInactive)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Toggle Search")
+                    .accessibilityIdentifier(AccessibilityIDs.SheetList.searchToggle)
+                    
+                    Button(action: addSheetAction) {
+                        Image(systemName: "square.and.pencil")
+                            .font(.system(size: theme.sheetListIconSize))
+                            .foregroundStyle(theme.iconInactive)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Add Sheet")
+                    .accessibilityIdentifier(AccessibilityIDs.SheetList.addButton)
+                }
+                .padding(.top, theme.headerPaddingTop)
+                .padding(.trailing, theme.headerPaddingHorizontal)
+                .padding(.bottom, theme.headerPaddingBottom)
+                .accessibilityElement(children: .contain)
+                
+                if showSearch {
+                    MacCustomSearchBar(
+                        searchText: $searchText,
+                        searchScope: $searchScope,
+                        isFocused: $isSearchFocused
+                    )
+                    .padding(.horizontal, theme.headerPaddingHorizontal)
+                    .padding(.bottom, theme.searchBarPaddingBottom)
+                }
+                
+                HStack {
+                    Text(titleText)
+                        .font(.system(size: theme.sheetListHeaderSize, weight: .bold))
+                        .foregroundStyle(theme.textPrimary)
+                    Spacer()
+                }
+                .padding(.horizontal, theme.headerPaddingHorizontal)
+                .padding(.bottom, theme.headerPaddingBottom)
+                .accessibilityElement(children: .combine)
+                
+                Divider()
+                #endif
+            }
+            .background(theme.controlBackground)
+        }
     }
     
     private var titleText: String {
-        if showSearch && !searchText.isEmpty && searchScope == .all {
-            return "All Sheets"
-        }
+        if showSearch && !searchText.isEmpty && searchScope == .all { return "All Sheets" }
         return folder?.name ?? "Inbox"
     }
     
@@ -166,9 +159,7 @@ struct FilteredSheetList: View {
     }
     
     private func deleteSheets(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets { modelContext.delete(sheets[index]) }
-        }
+        withAnimation { for index in offsets { modelContext.delete(sheets[index]) } }
     }
     
     private func deleteSheet(_ sheet: Sheet) {
