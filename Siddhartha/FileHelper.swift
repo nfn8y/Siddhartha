@@ -5,7 +5,7 @@
 
 import Foundation
 
-struct FileHelper {
+struct FileHelper: FileManaging {
     
     // The central place where we store images
     static var imagesDirectory: URL {

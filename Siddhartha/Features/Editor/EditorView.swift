@@ -9,6 +9,9 @@ struct EditorView: View {
     @Binding var sheet: Sheet?
     @Environment(\.theme) private var theme
     
+    // ViewModel for handling business logic
+    let viewModel: EditorViewModel
+    
     // Local state to handle text binding unwrapping safely
     @State private var text: String = ""
     
@@ -18,7 +21,6 @@ struct EditorView: View {
                 TextEditor(text: $text)
                     .font(theme.uiFont)
                     .scrollContentBackground(.hidden)
-                    // Added Identifier
                     .accessibilityIdentifier(AccessibilityIDs.Editor.mainText)
                     .onChange(of: text) { _, newValue in
                         sheet?.content = newValue
@@ -40,6 +42,14 @@ struct EditorView: View {
         .onChange(of: sheet) { _, newSheet in
             if let newSheet = newSheet {
                 text = newSheet.content
+            }
+        }
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button("Export as PDF", systemImage: "square.and.arrow.up") {
+                    viewModel.exportAsPDF(sheet: sheet)
+                }
+                .disabled(sheet == nil)
             }
         }
     }

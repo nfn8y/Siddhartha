@@ -8,9 +8,9 @@ import PDFKit
 
 #if os(macOS)
 @MainActor
-struct PDFCreator {
+struct PDFCreator: PDFCreating {
     
-    static func createSimplePDF(title: String, content: String) -> URL? {
+    static func createSimplePDF(title: String, content: String, fileManager: FileManaging.Type) -> URL? {
         // 1. Setup the formatting first (Force BLACK text for PDF so it prints correctly)
         let baseAttributes: [NSAttributedString.Key: Any] = [
             .font: NSFont(name: "Georgia", size: 14) ?? NSFont.systemFont(ofSize: 14),
@@ -40,7 +40,7 @@ struct PDFCreator {
                 let filename = String(content[range])
                 
                 // --- UPDATE: Use FileHelper here ---
-                let fileURL = FileHelper.imagesDirectory.appendingPathComponent(filename)
+                let fileURL = fileManager.imagesDirectory.appendingPathComponent(filename)
                 
                 if let image = NSImage(contentsOf: fileURL) {
                     let attachment = NSTextAttachment()

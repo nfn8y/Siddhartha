@@ -50,6 +50,12 @@ struct ContentView: View {
     
     @ViewBuilder
     private var detailView: some View {
-        EditorView(sheet: $selectedSheet)
+        EditorView(
+            sheet: $selectedSheet,
+            viewModel: EditorViewModel(
+                storageService: Services.shared.storage,
+                actionService: Services.shared.actions
+            )
+        )
     }
 }

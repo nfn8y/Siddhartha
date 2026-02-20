@@ -54,11 +54,11 @@ class Services {
         // It acts as the Factory.
         #if os(macOS)
         self.theme = MacTheme()
-        self.storage = MacStorage()
+        self.storage = MacStorage(pdfCreator: PDFCreator.self, fileManager: FileHelper.self)
         self.actions = MacActions()
         #else
         self.theme = iOSTheme()
-        self.storage = iOSStorage()
+        self.storage = iOSStorage(fileManager: FileHelper.self)
         self.actions = iOSActions()
         #endif
     }

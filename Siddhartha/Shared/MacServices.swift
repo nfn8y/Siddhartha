@@ -20,16 +20,19 @@ struct MacTheme: ThemeService {
 
 // --- STORAGE ---
 struct MacStorage: StorageService {
+    let pdfCreator: PDFCreating.Type
+    let fileManager: FileManaging.Type
+    
     func saveImage(_ image: PlatformImage) -> String? {
         guard let data = image.tiffRepresentation,
               let bitmap = NSBitmapImageRep(data: data),
               let jpegData = bitmap.representation(using: .jpeg, properties: [:]) else { return nil }
         
-        return FileHelper.saveToDisk(data: jpegData)
+        return fileManager.saveToDisk(data: jpegData)
     }
     
     func createPDF(title: String, content: String) -> URL? {
-        return PDFCreator.createSimplePDF(title: title, content: content)
+        return pdfCreator.createSimplePDF(title: title, content: content, fileManager: fileManager)
     }
 }
 

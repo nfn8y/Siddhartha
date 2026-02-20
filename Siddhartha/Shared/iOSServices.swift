@@ -20,9 +20,11 @@ struct iOSTheme: ThemeService {
 
 // --- STORAGE ---
 struct iOSStorage: StorageService {
+    let fileManager: FileManaging.Type
+
     func saveImage(_ image: PlatformImage) -> String? {
         guard let data = image.jpegData(compressionQuality: 0.8) else { return nil }
-        return FileHelper.saveToDisk(data: data)
+        return fileManager.saveToDisk(data: data)
     }
     
     func createPDF(title: String, content: String) -> URL? {

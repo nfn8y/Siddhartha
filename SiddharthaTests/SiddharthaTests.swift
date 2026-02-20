@@ -50,7 +50,7 @@ struct SiddharthaTests {
     @MainActor
     func testPDFCreation() {
         // We can't visually check the PDF, but we can check if the file is created
-        let url = PDFCreator.createSimplePDF(title: "Test PDF", content: "This is the content")
+        let url = PDFCreator.createSimplePDF(title: "Test PDF", content: "This is the content", fileManager: FileHelper.self)
         
         // Check if URL is valid
         #expect(url != nil)
