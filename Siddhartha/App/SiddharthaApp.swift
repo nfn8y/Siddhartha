@@ -38,7 +38,7 @@ struct SiddharthaApp: App {
         .modelContainer(sharedModelContainer)
         #if os(macOS)
         .commands {
-            StrikethroughCommands()
+            EditorCommands()
         }
         #endif
     }

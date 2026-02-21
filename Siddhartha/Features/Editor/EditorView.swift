@@ -7,41 +7,32 @@ import SwiftUI
 
 struct EditorView: View {
     @Binding var sheet: Sheet?
-    @Environment(\.theme) private var theme
+    
+    // State for the underlying editor's selection range
+    @State private var selectedRange = NSRange(location: 0, length: 0)
     
     // ViewModel for handling business logic
     let viewModel: EditorViewModel
     
-    // Local state to handle text binding unwrapping safely
-    @State private var text: String = ""
-    
     var body: some View {
         Group {
-            if let _ = sheet {
-                TextEditor(text: $text)
-                    .font(theme.uiFont)
-                    .scrollContentBackground(.hidden)
-                    .accessibilityIdentifier(AccessibilityIDs.Editor.mainText)
-                    .onChange(of: text) { _, newValue in
-                        sheet?.content = newValue
-                        // Simple logic: first line is title
-                        let lines = newValue.components(separatedBy: .newlines)
-                        if let firstLine = lines.first {
-                            sheet?.title = String(firstLine.prefix(50)) // Limit title length
+            if let sheet = sheet {
+                // Use our custom, platform-specific editor instead of the basic one
+                PlatformEditor(sheet: sheet, selectedRange: $selectedRange) {
+                    // This is the onTextChange closure
+                    // Simple logic: first line is title
+                    let lines = sheet.content.components(separatedBy: .newlines)
+                    if let firstLine = lines.first {
+                        // Avoid modifying the title if it's the same, to prevent extra churn
+                        let newTitle = String(firstLine.prefix(50))
+                        if sheet.title != newTitle {
+                            sheet.title = newTitle
                         }
                     }
+                }
+                .accessibilityIdentifier(AccessibilityIDs.Editor.mainText)
             } else {
                 ContentUnavailableView("Select a Sheet", systemImage: "doc.text")
-            }
-        }
-        .onAppear {
-            if let sheet = sheet {
-                text = sheet.content
-            }
-        }
-        .onChange(of: sheet) { _, newSheet in
-            if let newSheet = newSheet {
-                text = newSheet.content
             }
         }
         .toolbar {

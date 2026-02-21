@@ -29,8 +29,9 @@ final class SiddharthaUITests: XCTestCase {
         let newSheetRow = find(newRowID)
         XCTAssertTrue(newSheetRow.waitForExistence(timeout: 3.0), "New sheet row should appear")
         
-        let editor = find(AccessibilityIDs.Editor.mainText)
-        XCTAssertTrue(editor.exists, "Editor should be visible")
+        // Find the text view directly by its new identifier
+        let editor = app.textViews["siddhartha-text-view"]
+        XCTAssertTrue(editor.waitForExistence(timeout: 2.0), "Editor should be visible")
         
         editor.click()
         editor.typeText("UI Test Content")
@@ -60,5 +61,33 @@ final class SiddharthaUITests: XCTestCase {
         // Wait for animation
         Thread.sleep(forTimeInterval: 0.5)
         XCTAssertFalse(searchField.exists, "Search field should disappear")
+    }
+    
+    func testBoldShortcut() throws {
+        // 1. Create a new sheet
+        let addButton = find(AccessibilityIDs.SheetList.addButton)
+        XCTAssertTrue(addButton.waitForExistence(timeout: 5.0), "Add Button not found")
+        addButton.click()
+        
+        // 2. Get the editor and type text
+        // Find the text view directly by its new identifier
+        let editor = app.textViews["siddhartha-text-view"]
+        XCTAssertTrue(editor.waitForExistence(timeout: 2.0), "Editor should be visible")
+        editor.click()
+        editor.typeText("world")
+        
+        // 3. Select the text by sending Cmd+A
+        app.typeKey("a", modifierFlags: .command)
+
+        // 4. Apply bold via shortcut
+        app.typeKey("b", modifierFlags: .command)
+        
+        // 5. Assert the text has changed.
+        // We use an expectation to wait for the UI to update asynchronously.
+        let expectation = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "value == '*world*'"),
+            object: editor
+        )
+        wait(for: [expectation], timeout: 2.0)
     }
 }

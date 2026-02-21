@@ -14,6 +14,10 @@ struct iOSMarkdownEditor: UIViewRepresentable {
 
     func makeUIView(context: Context) -> UITextView {
         let textView = UITextView()
+        
+        // Set the identifier directly on the text view so XCTest can find it
+        textView.accessibilityIdentifier = "siddhartha-text-view"
+        
         textView.isEditable = true
         textView.isScrollEnabled = true
         textView.backgroundColor = .clear
