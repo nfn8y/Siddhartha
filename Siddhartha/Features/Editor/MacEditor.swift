@@ -7,6 +7,19 @@
 import SwiftUI
 import AppKit
 
+// A new command set for our custom Strikethrough action
+struct StrikethroughCommands: Commands {
+    var body: some Commands {
+        CommandMenu("Format") {
+            Button("Strikethrough") {
+                // Find the first responder and ask it to perform our custom action
+                NSApp.keyWindow?.firstResponder?.tryToPerform(#selector(SiddharthaTextView.toggleStrikethrough), with: nil)
+            }
+            // We can assign a shortcut here if we want, e.g., .keyboardShortcut("-", modifiers: .command)
+        }
+    }
+}
+
 struct MacMarkdownEditor: NSViewRepresentable {
     @Binding var text: String
     @Binding var selectedRange: NSRange
@@ -17,7 +30,18 @@ struct MacMarkdownEditor: NSViewRepresentable {
         scrollView.hasVerticalScroller = true
         scrollView.drawsBackground = false
         
-        let textView = NSTextView()
+        // Use our custom TextView subclass instead of the standard one
+        let textView = SiddharthaTextView()
+        
+        // Wire up the callback
+        textView.onStyleToggle = { result in
+            self.text = result.newText
+            self.selectedRange = result.newSelectedRange
+            
+            // After styling, we need to re-highlight
+            context.coordinator.highlightSyntax(in: textView)
+        }
+        
         textView.isRichText = false
         textView.allowsUndo = true
         
@@ -34,17 +58,24 @@ struct MacMarkdownEditor: NSViewRepresentable {
         textView.autoresizingMask = [.width]
         textView.textContainer?.widthTracksTextView = true
         
-        textView.string = text
-        
         scrollView.documentView = textView
         return scrollView
     }
 
     func updateNSView(_ nsView: NSScrollView, context: Context) {
         guard let textView = nsView.documentView as? NSTextView else { return }
+        
+        // Only update the text if it's different, to avoid cursor jumping
         if textView.string != text {
             textView.string = text
+            // Also update the selection when text changes externally
+            textView.setSelectedRange(selectedRange)
             context.coordinator.highlightSyntax(in: textView)
+        } else {
+            // If text is the same, maybe just the selection changed
+            if textView.selectedRange != selectedRange {
+                textView.setSelectedRange(selectedRange)
+            }
         }
     }
 

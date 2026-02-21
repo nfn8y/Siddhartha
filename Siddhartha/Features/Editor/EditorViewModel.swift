@@ -19,13 +19,19 @@ class EditorViewModel {
     func exportAsPDF(sheet: Sheet?) {
         guard let sheet = sheet else { return }
         
-        // 1. Ask the StorageService to create a temporary PDF file
-        guard let pdfURL = storage.createPDF(title: sheet.title, content: sheet.content) else {
-            print("PDF creation failed.")
-            return
+        // Use a background task to avoid blocking the UI
+        Task {
+            // 1. Create the PDF on a background thread. This is the heavy work.
+            let pdfURL = storage.createPDF(title: sheet.title, content: sheet.content)
+            
+            // 2. Switch back to the main thread to present the UI.
+            await MainActor.run {
+                guard let url = pdfURL else {
+                    print("PDF creation failed.")
+                    return
+                }
+                actions.exportPDF(url: url, title: sheet.title)
+            }
         }
-        
-        // 2. Ask the ActionService to present the system's export UI
-        actions.exportPDF(url: pdfURL, title: sheet.title)
     }
 }

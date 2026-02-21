@@ -36,5 +36,10 @@ struct SiddharthaApp: App {
                 #endif
         }
         .modelContainer(sharedModelContainer)
+        #if os(macOS)
+        .commands {
+            StrikethroughCommands()
+        }
+        #endif
     }
 }
