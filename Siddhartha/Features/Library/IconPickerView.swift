@@ -16,7 +16,7 @@ struct IconPickerView: View {
     ]
     
     // The palette we offer
-    let colors: [Color] = [.blue, .red, .orange, .yellow, .green, .purple, .gray, .pink, .black]
+    let colors: [Color] = [.blue, .red, .orange, .yellow, .green, .purple, .gray, .pink, .brown, .cyan, .primary]
 
     var body: some View {
         VStack(spacing: 20) {
@@ -27,8 +27,11 @@ struct IconPickerView: View {
             // Name Field
             HStack {
                 Text("Name:")
-                TextField("Folder Name", text: $folder.name)
-                    .textFieldStyle(.roundedBorder)
+                TextField("Folder Name", text: Binding(
+                    get: { folder.name ?? "" },
+                    set: { folder.name = $0 }
+                ))
+                .textFieldStyle(.roundedBorder)
             }
             
             Divider()
@@ -42,8 +45,8 @@ struct IconPickerView: View {
                             .font(.title2)
                             .padding(8)
                             // Use the folder's saved color for selection highlight
-                            .background(folder.icon == iconName ? Color(hex: folder.colorHex).opacity(0.2) : Color.clear)
-                            .foregroundColor(folder.icon == iconName ? Color(hex: folder.colorHex) : .primary)
+                            .background(folder.icon == iconName ? Color(hex: folder.colorHex ?? "#007AFF").opacity(0.2) : Color.clear)
+                            .foregroundColor(folder.icon == iconName ? Color(hex: folder.colorHex ?? "#007AFF") : .primary)
                             .clipShape(Circle())
                             .onTapGesture {
                                 folder.icon = iconName
@@ -60,7 +63,7 @@ struct IconPickerView: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 12) {
                         ForEach(colors, id: \.self) { color in
-                            let isSelected = Color(hex: folder.colorHex).toHex() == color.toHex()
+                            let isSelected = Color(hex: folder.colorHex ?? "#007AFF").toHex() == color.toHex()
                             
                             Circle()
                                 .fill(color)

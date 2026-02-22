@@ -42,7 +42,9 @@
 			membershipExceptions = (
 				Features/Library/Folder.swift,
 				Features/Library/FolderListView.swift,
+				Features/Library/IconPickerView.swift,
 				Features/SheetList/Sheet.swift,
+				Shared/ColorHelper.swift,
 				Shared/Config/AccessibilityIDs.swift,
 			);
 			target = 9602C0252F10343C005D588E /* SiddharthaTests */;
@@ -52,7 +54,9 @@
 			membershipExceptions = (
 				Features/Library/Folder.swift,
 				Features/Library/FolderListView.swift,
+				Features/Library/IconPickerView.swift,
 				Features/SheetList/Sheet.swift,
+				Shared/ColorHelper.swift,
 				Shared/Config/AccessibilityIDs.swift,
 			);
 			target = 9602C02F2F10343C005D588E /* SiddharthaUITests */;
@@ -60,6 +64,7 @@
 		96E6A9CA2F1E4A9B0057D76B /* Exceptions for "SiddharthaUITests" folder in "Siddhartha" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				Siddhartha_iOS_UITests.swift,
 				SiddharthaUITests.swift,
 			);
 			target = 9602C0142F10343B005D588E /* Siddhartha */;
@@ -67,6 +72,7 @@
 		96E6A9CC2F1E4A9B0057D76B /* Exceptions for "SiddharthaUITests" folder in "SiddharthaUITests" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				Siddhartha_iOS_UITests.swift,
 				SiddharthaUITests.swift,
 			);
 			target = 9602C02F2F10343C005D588E /* SiddharthaUITests */;

@@ -18,14 +18,17 @@ struct EditorView: View {
         Group {
             if let sheet = sheet {
                 // Use our custom, platform-specific editor instead of the basic one
-                PlatformEditor(sheet: sheet, selectedRange: $selectedRange) {
+                PlatformEditor(sheet: sheet, selectedRange: $selectedRange) { text in
                     // This is the onTextChange closure
+                    // Update plain text content for word count and title
+                    sheet.content = text
+                    
                     // Simple logic: first line is title
-                    let lines = sheet.content.components(separatedBy: .newlines)
+                    let lines = text.components(separatedBy: .newlines)
                     if let firstLine = lines.first {
                         // Avoid modifying the title if it's the same, to prevent extra churn
                         let newTitle = String(firstLine.prefix(50))
-                        if sheet.title != newTitle {
+                        if (sheet.title ?? "") != newTitle {
                             sheet.title = newTitle
                         }
                     }
@@ -35,6 +38,7 @@ struct EditorView: View {
                 ContentUnavailableView("Select a Sheet", systemImage: "doc.text")
             }
         }
+        .background(Theme.paperBackground)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button("Export as PDF", systemImage: "square.and.arrow.up") {

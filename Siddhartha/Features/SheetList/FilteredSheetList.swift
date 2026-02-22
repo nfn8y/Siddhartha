@@ -19,7 +19,6 @@ struct FilteredSheetList: View {
     let addSheetAction: () -> Void
     
     @Query private var sheets: [Sheet]
-    @FocusState private var isSearchFocused: Bool
     
     init(folder: Folder?, searchText: Binding<String>, searchScope: Binding<SearchScope>, showSearch: Binding<Bool>, selectedSheet: Binding<Sheet?>, addSheetAction: @escaping () -> Void) {
         self.folder = folder
@@ -33,6 +32,7 @@ struct FilteredSheetList: View {
         let search = searchText.wrappedValue
         let scope = searchScope.wrappedValue
         
+        // The predicate logic remains the same
         if search.isEmpty {
             if let folderID {
                 _sheets = Query(filter: #Predicate<Sheet> { sheet in sheet.folder?.id == folderID }, sort: \Sheet.createdAt, order: .reverse)
@@ -42,18 +42,18 @@ struct FilteredSheetList: View {
         } else {
             if scope == .all {
                 _sheets = Query(filter: #Predicate<Sheet> { sheet in
-                    sheet.title.localizedStandardContains(search) || sheet.content.localizedStandardContains(search)
+                    (sheet.title ?? "").localizedStandardContains(search) || (sheet.content ?? "").localizedStandardContains(search)
                 }, sort: \Sheet.createdAt, order: .reverse)
             } else {
                 if let folderID {
                     _sheets = Query(filter: #Predicate<Sheet> { sheet in
                         (sheet.folder?.id == folderID) &&
-                        (sheet.title.localizedStandardContains(search) || sheet.content.localizedStandardContains(search))
+                        ((sheet.title ?? "").localizedStandardContains(search) || (sheet.content ?? "").localizedStandardContains(search))
                     }, sort: \Sheet.createdAt, order: .reverse)
                 } else {
                     _sheets = Query(filter: #Predicate<Sheet> { sheet in
                         (sheet.folder == nil) &&
-                        (sheet.title.localizedStandardContains(search) || sheet.content.localizedStandardContains(search))
+                        ((sheet.title ?? "").localizedStandardContains(search) || (sheet.content ?? "").localizedStandardContains(search))
                     }, sort: \Sheet.createdAt, order: .reverse)
                 }
             }
@@ -65,7 +65,7 @@ struct FilteredSheetList: View {
             ForEach(sheets) { sheet in
                 NavigationLink(value: sheet) {
                     VStack(alignment: .leading, spacing: theme.sheetListRowSpacing) {
-                        Text(sheet.title.isEmpty ? "New Sheet" : sheet.title)
+                        Text((sheet.title ?? "").isEmpty ? "New Sheet" : (sheet.title ?? ""))
                             .font(.system(size: theme.sheetListRowTitleSize, weight: .bold))
                             .lineLimit(1)
                         
@@ -76,7 +76,7 @@ struct FilteredSheetList: View {
                     }
                     .padding(.vertical, theme.sheetListRowPaddingVertical)
                 }
-                .accessibilityIdentifier(AccessibilityIDs.SheetList.row(title: sheet.title))
+                .accessibilityIdentifier(AccessibilityIDs.SheetList.row(title: sheet.title ?? ""))
                 .contextMenu {
                     Button("Delete", role: .destructive) { deleteSheet(sheet) }
                 }
@@ -84,74 +84,48 @@ struct FilteredSheetList: View {
             .onDelete(perform: deleteSheets)
         }
         .listStyle(.sidebar)
-        .safeAreaInset(edge: .top, spacing: 0) {
-            VStack(spacing: theme.headerContainerSpacing) {
-                #if os(macOS)
-                HStack(spacing: theme.headerButtonSpacing) {
-                    Spacer()
-                    
-                    Button(action: {
-                        withAnimation(.snappy) {
-                            showSearch.toggle()
-                            if !showSearch { searchText = "" }
-                        }
-                    }) {
-                        Image(systemName: showSearch ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
-                            .font(.system(size: theme.sheetListIconSize))
-                            .foregroundStyle(showSearch ? theme.iconActive : theme.iconInactive)
+        .navigationTitle(titleText)
+        .toolbar {
+            #if os(iOS)
+            ToolbarItem(placement: .navigationBarLeading) { EditButton() }
+            #endif
+
+            ToolbarItem(placement: .primaryAction) {
+                Button(action: {
+                    withAnimation(.snappy) {
+                        showSearch.toggle()
+                        if !showSearch { searchText = "" }
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Toggle Search")
-                    .accessibilityIdentifier(AccessibilityIDs.SheetList.searchToggle)
-                    
-                    Button(action: addSheetAction) {
-                        Image(systemName: "square.and.pencil")
-                            .font(.system(size: theme.sheetListIconSize))
-                            .foregroundStyle(theme.iconInactive)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Add Sheet")
-                    .accessibilityIdentifier(AccessibilityIDs.SheetList.addButton)
+                }) {
+                    Image(systemName: "magnifyingglass")
                 }
-                .padding(.top, theme.headerPaddingTop)
-                .padding(.trailing, theme.headerPaddingHorizontal)
-                .padding(.bottom, theme.headerPaddingBottom)
-                .accessibilityElement(children: .contain)
-                
-                if showSearch {
-                    MacCustomSearchBar(
-                        searchText: $searchText,
-                        searchScope: $searchScope,
-                        isFocused: $isSearchFocused
-                    )
-                    .padding(.horizontal, theme.headerPaddingHorizontal)
-                    .padding(.bottom, theme.searchBarPaddingBottom)
-                }
-                
-                HStack {
-                    Text(titleText)
-                        .font(.system(size: theme.sheetListHeaderSize, weight: .bold))
-                        .foregroundStyle(theme.textPrimary)
-                    Spacer()
-                }
-                .padding(.horizontal, theme.headerPaddingHorizontal)
-                .padding(.bottom, theme.headerPaddingBottom)
-                .accessibilityElement(children: .combine)
-                
-                Divider()
-                #endif
+                .accessibilityLabel("Toggle Search")
+                .accessibilityIdentifier(AccessibilityIDs.SheetList.searchToggle)
             }
-            .background(theme.controlBackground)
+            
+            ToolbarItem(placement: .primaryAction) {
+                Button(action: addSheetAction) {
+                    Image(systemName: "square.and.pencil")
+                }
+                .accessibilityLabel("Add Sheet")
+                .accessibilityIdentifier(AccessibilityIDs.SheetList.addButton)
+            }
+        }
+        .searchable(text: $searchText, isPresented: $showSearch)
+        .searchScopes($searchScope) {
+            Text("Current Folder").tag(SearchScope.currentFolder)
+            Text("All Sheets").tag(SearchScope.all)
         }
     }
     
     private var titleText: String {
-        if showSearch && !searchText.isEmpty && searchScope == .all { return "All Sheets" }
+        // In search mode, title should reflect that
+        if showSearch { return "Search" }
         return folder?.name ?? "Inbox"
     }
     
     private func previewText(for sheet: Sheet) -> String {
-        let text = sheet.content.trimmingCharacters(in: .whitespacesAndNewlines)
+        let text = (sheet.content ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         if text.isEmpty { return "No additional text" }
         return text.replacingOccurrences(of: "\n", with: " ")
             .replacingOccurrences(of: "#", with: "")

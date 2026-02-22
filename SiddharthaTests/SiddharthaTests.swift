@@ -57,8 +57,14 @@ struct SiddharthaTests {
     @Test("Verify PDF Generation")
     @MainActor
     func testPDFCreation() {
+        #if os(macOS)
+        let creator: any PDFCreating.Type = PDFCreator.self
+        #else
+        let creator: any PDFCreating.Type = iOSPDFCreator.self
+        #endif
+        
         // We can't visually check the PDF, but we can check if the file is created
-        let url = PDFCreator.createSimplePDF(title: "Test PDF", content: "This is the content", fileManager: FileHelper.self)
+        let url = creator.createSimplePDF(title: "Test PDF", content: "This is the content", richContent: nil, fileManager: FileHelper.self)
         
         // Check if URL is valid
         #expect(url != nil)
@@ -67,62 +73,4 @@ struct SiddharthaTests {
         let fileExists = FileManager.default.fileExists(atPath: url!.path)
         #expect(fileExists == true)
     }
-
-    #if os(macOS)
-    @Test("Verify Markdown Highlighting Logic")
-    @MainActor
-    func testMarkdownHighlighting() {
-        // 1. Setup
-        let coordinator = MacMarkdownEditor.Coordinator(
-            MacMarkdownEditor(
-                text: .constant(""),
-                selectedRange: .constant(NSRange()),
-                onTextChange: { _ in }
-            )
-        )
-        let textView = NSTextView()
-        let testString = "*bold* _italic_ -strike- <u>underline</u>"
-        textView.string = testString
-        
-        // 2. Action
-        coordinator.highlightSyntax(in: textView)
-        
-        // 3. Verification
-        guard let attributedString = textView.textStorage else {
-            Issue.record("NSTextStorage was nil")
-            return
-        }
-        
-        // Helper to find font traits
-        func getTraits(for substring: String) -> NSFontDescriptor.SymbolicTraits? {
-            guard let range = testString.range(of: substring) else { return nil }
-            let nsRange = NSRange(range, in: testString)
-            guard let font = attributedString.attribute(.font, at: nsRange.location, effectiveRange: nil) as? NSFont else { return nil }
-            return font.fontDescriptor.symbolicTraits
-        }
-        
-        // Helper to find other attributes
-        func getAttributeValue(for substring: String, attr: NSAttributedString.Key) -> Any? {
-            guard let range = testString.range(of: substring) else { return nil }
-            let nsRange = NSRange(range, in: testString)
-            return attributedString.attribute(attr, at: nsRange.location, effectiveRange: nil)
-        }
-        
-        // Assert Bold
-        let boldTraits = getTraits(for: "bold")
-        #expect(boldTraits?.contains(.bold) == true, "Text 'bold' should have bold trait")
-        
-        // Assert Italic
-        let italicTraits = getTraits(for: "italic")
-        #expect(italicTraits?.contains(.italic) == true, "Text 'italic' should have italic trait")
-
-        // Assert Strikethrough
-        let strikeValue = getAttributeValue(for: "strike", attr: .strikethroughStyle) as? NSNumber
-        #expect(strikeValue == NSUnderlineStyle.single.rawValue as NSNumber, "Text 'strike' should have strikethrough style")
-
-        // Assert Underline
-        let underlineValue = getAttributeValue(for: "underline", attr: .underlineStyle) as? NSNumber
-        #expect(underlineValue == NSUnderlineStyle.single.rawValue as NSNumber, "Text 'underline' should have underline style")
-    }
-    #endif
 }

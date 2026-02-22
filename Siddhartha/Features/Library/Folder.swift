@@ -8,11 +8,11 @@ import SwiftData
 
 @Model
 final class Folder {
-    var id: UUID
-    var name: String
-    var createdAt: Date
-    var icon: String // e.g., "folder"
-    var colorHex: String // NEW: Store color as a hex string (e.g. "#FF0000")
+    var id: UUID? // Changed to optional for migration
+    var name: String? // Changed to optional for migration
+    var createdAt: Date? // Changed to optional for migration
+    var icon: String? // Changed to optional for migration
+    var colorHex: String? // Changed to optional for migration
     
     @Relationship(deleteRule: .cascade, inverse: \Sheet.folder)
     var sheets: [Sheet]? = []

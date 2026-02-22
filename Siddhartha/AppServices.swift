@@ -28,7 +28,7 @@ protocol ThemeService {
 // Handles IO (Saving images, PDFs)
 protocol StorageService {
     func saveImage(_ image: PlatformImage) -> String?
-    func createPDF(title: String, content: String) -> URL?
+    func createPDF(title: String, content: String, richContent: Data?) -> URL?
 }
 
 // Handles Actions (Things that require UI context, like picking files)
@@ -58,7 +58,7 @@ class Services {
         self.actions = MacActions()
         #else
         self.theme = iOSTheme()
-        self.storage = iOSStorage(fileManager: FileHelper.self)
+        self.storage = iOSStorage(fileManager: FileHelper.self, pdfCreator: iOSPDFCreator.self)
         self.actions = iOSActions()
         #endif
     }

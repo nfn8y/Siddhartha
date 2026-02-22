@@ -22,7 +22,7 @@ class EditorViewModel {
         // Use a background task to avoid blocking the UI
         Task {
             // 1. Create the PDF on a background thread. This is the heavy work.
-            let pdfURL = storage.createPDF(title: sheet.title, content: sheet.content)
+            let pdfURL = storage.createPDF(title: sheet.title ?? "", content: sheet.content ?? "", richContent: sheet.attributedContent)
             
             // 2. Switch back to the main thread to present the UI.
             await MainActor.run {
@@ -30,7 +30,7 @@ class EditorViewModel {
                     print("PDF creation failed.")
                     return
                 }
-                actions.exportPDF(url: url, title: sheet.title)
+                actions.exportPDF(url: url, title: sheet.title ?? "")
             }
         }
     }

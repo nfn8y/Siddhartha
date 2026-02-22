@@ -5,6 +5,12 @@
 
 import SwiftUI
 
+#if os(iOS)
+import UIKit
+#elseif os(macOS)
+import AppKit
+#endif
+
 struct AppTheme {
     // --- FONTS ---
     let fontName: String = "Georgia"
@@ -17,7 +23,13 @@ struct AppTheme {
     // --- COLORS ---
     var textPrimary: Color = .primary
     var textSecondary: Color = .secondary
+    
+    #if os(macOS)
     var controlBackground: Color = Color(nsColor: .controlBackgroundColor)
+    #else
+    var controlBackground: Color = Color(uiColor: .secondarySystemBackground)
+    #endif
+    
     var iconActive: Color = .accentColor
     var iconInactive: Color = .gray
     var searchBarBorderActive: Color = .accentColor

@@ -31,8 +31,8 @@ struct MacStorage: StorageService {
         return fileManager.saveToDisk(data: jpegData)
     }
     
-    func createPDF(title: String, content: String) -> URL? {
-        return pdfCreator.createSimplePDF(title: title, content: content, fileManager: fileManager)
+    func createPDF(title: String, content: String, richContent: Data?) -> URL? {
+        return pdfCreator.createSimplePDF(title: title, content: content, richContent: richContent, fileManager: fileManager)
     }
 }
 

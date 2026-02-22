@@ -31,6 +31,7 @@ struct ContentView: View {
         #else
         .navigationSplitViewStyle(.automatic)
         #endif
+        .background(Theme.paperBackground)
     }
     
     // MARK: - Subviews

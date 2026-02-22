@@ -8,21 +8,21 @@ import SwiftUI
 struct PlatformEditor: View {
     @Bindable var sheet: Sheet
     @Binding var selectedRange: NSRange
-    var onTextChange: () -> Void
+    var onTextChange: (String) -> Void
     
     var body: some View {
         #if os(macOS)
-        MacMarkdownEditor(
-            text: $sheet.content,
+        MacRichTextEditor(
+            sheet: sheet,
+            attributedData: $sheet.attributedContent,
             selectedRange: $selectedRange,
-            onTextChange: { _ in onTextChange() }
+            onTextChange: onTextChange
         )
         #else
-        // NOW USING THE SMART EDITOR ON iOS TOO
-        iOSMarkdownEditor(
-            text: $sheet.content,
+        iOSRichTextEditor(
+            attributedData: $sheet.attributedContent,
             selectedRange: $selectedRange,
-            onTextChange: { onTextChange() }
+            onTextChange: onTextChange
         )
         // Add a little padding for the iOS touch targets
         .padding(.horizontal, 4)

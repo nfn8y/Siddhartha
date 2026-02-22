@@ -16,7 +16,12 @@ struct SiddharthaApp: App {
             Folder.self,
             Sheet.self
         ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+        
+        // --- TEST MODE CHECK ---
+        // If we are running a UI Test, use an IN-MEMORY store to avoid crashes 
+        // and ensure each test starts with a clean slate.
+        let isTestMode = ProcessInfo.processInfo.arguments.contains("-UITestMode")
+        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: isTestMode)
 
         do {
             return try ModelContainer(for: schema, configurations: [modelConfiguration])
@@ -28,6 +33,9 @@ struct SiddharthaApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                #if os(macOS)
+                .frame(minWidth: 800, minHeight: 600)
+                #endif
                 // 2. Watch for Theme Changes (Mac Only)
                 #if os(macOS)
                 .onChange(of: colorScheme, initial: true) { _, newScheme in
@@ -35,6 +43,9 @@ struct SiddharthaApp: App {
                 }
                 #endif
         }
+        #if os(macOS)
+        .defaultSize(width: 1000, height: 800)
+        #endif
         .modelContainer(sharedModelContainer)
         #if os(macOS)
         .commands {

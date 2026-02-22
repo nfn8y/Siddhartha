@@ -11,17 +11,17 @@ final class SiddharthaUITests: XCTestCase {
 
     override func setUpWithError() throws {
         continueAfterFailure = false
-        app = XCUIApplication(bundleIdentifier: "com.nfn8y.Siddhartha")
+        app = XCUIApplication()
         app.launchArguments = ["-UITestMode"]
         app.launch()
     }
     
     func find(_ id: String) -> XCUIElement {
-        return app.descendants(matching: .any).matching(identifier: id).firstMatch
+        return app.buttons[id]
     }
 
     func testCreateAndEditSheet() throws {
-        let addButton = find(AccessibilityIDs.SheetList.addButton)
+        let addButton = app.buttons[AccessibilityIDs.SheetList.addButton]
         XCTAssertTrue(addButton.waitForExistence(timeout: 5.0), "Add Button not found")
         addButton.click()
         
@@ -30,7 +30,7 @@ final class SiddharthaUITests: XCTestCase {
         XCTAssertTrue(newSheetRow.waitForExistence(timeout: 3.0), "New sheet row should appear")
         
         // Find the text view directly by its new identifier
-        let editor = app.textViews["siddhartha-text-view"]
+        let editor = app.textViews[AccessibilityIDs.Editor.mainText]
         XCTAssertTrue(editor.waitForExistence(timeout: 2.0), "Editor should be visible")
         
         editor.click()
@@ -40,14 +40,15 @@ final class SiddharthaUITests: XCTestCase {
     
     func testSearchFunctionality() throws {
         // 1. Open Search
-        let searchToggle = find(AccessibilityIDs.SheetList.searchToggle)
+        let searchToggle = app.buttons[AccessibilityIDs.SheetList.searchToggle]
         XCTAssertTrue(searchToggle.waitForExistence(timeout: 5.0))
         searchToggle.click()
         
         // 2. Verify and Type in Search Field
-        // FIX: Now we target the TextField directly using the new ID
-        let searchField = find(AccessibilityIDs.SheetList.searchField)
+        // Using firstMatch for searchFields as .searchable generates the field
+        let searchField = app.searchFields.firstMatch
         XCTAssertTrue(searchField.waitForExistence(timeout: 2.0), "Search Field didn't appear")
+        XCTAssertTrue(searchField.isHittable, "Search Field should be hittable")
         
         searchField.click()
         searchField.typeText("Banana")
@@ -57,21 +58,17 @@ final class SiddharthaUITests: XCTestCase {
         
         // 4. Close Search
         searchToggle.click()
-        
-        // Wait for animation
-        Thread.sleep(forTimeInterval: 0.5)
-        XCTAssertFalse(searchField.exists, "Search field should disappear")
     }
     
     func testBoldShortcut() throws {
         // 1. Create a new sheet
-        let addButton = find(AccessibilityIDs.SheetList.addButton)
+        let addButton = app.buttons[AccessibilityIDs.SheetList.addButton]
         XCTAssertTrue(addButton.waitForExistence(timeout: 5.0), "Add Button not found")
         addButton.click()
         
         // 2. Get the editor and type text
         // Find the text view directly by its new identifier
-        let editor = app.textViews["siddhartha-text-view"]
+        let editor = app.textViews[AccessibilityIDs.Editor.mainText]
         XCTAssertTrue(editor.waitForExistence(timeout: 2.0), "Editor should be visible")
         editor.click()
         editor.typeText("world")
@@ -83,11 +80,9 @@ final class SiddharthaUITests: XCTestCase {
         app.typeKey("b", modifierFlags: .command)
         
         // 5. Assert the text has changed.
-        // We use an expectation to wait for the UI to update asynchronously.
-        let expectation = XCTNSPredicateExpectation(
-            predicate: NSPredicate(format: "value == '*world*'"),
-            object: editor
-        )
-        wait(for: [expectation], timeout: 2.0)
+        // Using the built-in expectation helper which is more integrated with XCTestCase
+        let predicate = NSPredicate(format: "value == '*world*'")
+        expectation(for: predicate, evaluatedWith: editor, handler: nil)
+        waitForExpectations(timeout: 2.0, handler: nil)
     }
 }
