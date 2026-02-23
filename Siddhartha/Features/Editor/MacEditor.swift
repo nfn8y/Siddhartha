@@ -7,12 +7,12 @@ struct EditorCommands: Commands {
     var body: some Commands {
         CommandMenu("Format") {
             Button("Bold") {
-                NSApp.keyWindow?.firstResponder?.tryToPerform(#selector(SiddharthaTextView.toggleBold), with: nil)
+                NSApp.sendAction(#selector(NSFontManager.addFontTrait(_:)), to: nil, from: NSFontManager.shared)
             }
             .keyboardShortcut("b", modifiers: .command)
             
             Button("Italic") {
-                NSApp.keyWindow?.firstResponder?.tryToPerform(#selector(SiddharthaTextView.toggleItalic), with: nil)
+                NSApp.sendAction(#selector(NSFontManager.addFontTrait(_:)), to: nil, from: NSFontManager.shared)
             }
             .keyboardShortcut("i", modifiers: .command)
 
@@ -47,7 +47,8 @@ struct MacRichTextEditor: NSViewRepresentable {
         textView.isContinuousSpellCheckingEnabled = true
         
         textView.font = AppConfig.editorFont
-        textView.backgroundColor = .clear
+        textView.backgroundColor = .black
+        textView.textColor = .white
         textView.delegate = context.coordinator
         
 

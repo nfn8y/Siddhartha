@@ -21,6 +21,12 @@ final class Siddhartha_iOS_UITests: XCTestCase {
         // We need to navigate into a folder (Inbox) to see the sheets.
         let inbox = app.staticTexts["Inbox"]
         if inbox.waitForExistence(timeout: 5) {
+            // Wait for the Inbox button to become enabled
+            let isEnabledPredicate = NSPredicate(format: "isEnabled == true")
+            expectation(for: isEnabledPredicate, evaluatedWith: inbox, handler: nil)
+            waitForExpectations(timeout: 5, handler: nil)
+            
+            XCTAssertTrue(inbox.isEnabled, "'Inbox' button should be enabled to proceed with navigation")
             inbox.tap()
         }
     }
@@ -32,7 +38,7 @@ final class Siddhartha_iOS_UITests: XCTestCase {
         addButton.tap()
 
         // 2. Find the editor and type text
-        let editor = app.textViews["siddhartha-text-view"]
+        let editor = app.textViews[AccessibilityIDs.Editor.mainText]
         XCTAssertTrue(editor.waitForExistence(timeout: 2), "Editor text view not found")
         editor.tap()
         editor.typeText("Hello iOS")
@@ -47,7 +53,7 @@ final class Siddhartha_iOS_UITests: XCTestCase {
         XCTAssertTrue(addButton.waitForExistence(timeout: 5))
         addButton.tap()
         
-        let editor = app.textViews["siddhartha-text-view"]
+        let editor = app.textViews[AccessibilityIDs.Editor.mainText]
         XCTAssertTrue(editor.waitForExistence(timeout: 2))
         editor.tap()
         editor.typeText("Magic search keyword")

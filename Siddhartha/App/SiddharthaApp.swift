@@ -2,7 +2,7 @@
 //  SiddharthaApp.swift
 //  Siddhartha
 //
-
+//
 import SwiftUI
 import SwiftData
 
@@ -17,14 +17,28 @@ struct SiddharthaApp: App {
             Sheet.self
         ])
         
-        // --- TEST MODE CHECK ---
-        // If we are running a UI Test, use an IN-MEMORY store to avoid crashes 
-        // and ensure each test starts with a clean slate.
         let isTestMode = ProcessInfo.processInfo.arguments.contains("-UITestMode")
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: isTestMode)
-
+        
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            let container = try ModelContainer(for: schema, configurations: [modelConfiguration])
+            
+            if isTestMode {
+                // Ensure there's a default folder and sheet for UI tests
+                let context = container.mainContext
+                let existingFolders = try context.fetch(FetchDescriptor<Folder>())
+                if existingFolders.isEmpty {
+                    let defaultFolder = Folder(name: "Inbox")
+                    context.insert(defaultFolder)
+                    
+                    let defaultSheet = Sheet(title: "Test Sheet", content: "This is a test sheet for UI testing.")
+                    defaultSheet.folder = defaultFolder
+                    context.insert(defaultSheet)
+                    
+                    try context.save()
+                }
+            }
+            return container
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }

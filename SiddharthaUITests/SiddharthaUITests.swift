@@ -46,7 +46,7 @@ final class SiddharthaUITests: XCTestCase {
         
         // 2. Verify and Type in Search Field
         // Using firstMatch for searchFields as .searchable generates the field
-        let searchField = app.searchFields.firstMatch
+        let searchField = app.searchFields["Search..."].firstMatch
         XCTAssertTrue(searchField.waitForExistence(timeout: 2.0), "Search Field didn't appear")
         XCTAssertTrue(searchField.isHittable, "Search Field should be hittable")
         
